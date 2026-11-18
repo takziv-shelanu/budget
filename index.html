@@ -99,6 +99,11 @@ html, body { background: var(--bg); color: var(--ink); }
 [data-t=green] { --t: var(--t-green); } [data-t=peach] { --t: var(--t-peach); } [data-t=pink] { --t: var(--t-pink); }
 [data-t=blue] { --t: var(--t-blue); } [data-t=lilac] { --t: var(--t-lilac); } [data-t=yellow] { --t: var(--t-yellow); } [data-t=grey] { --t: var(--t-grey); }
 
+.hh-ico[data-cc] { background: hsl(var(--h) 78% var(--lg)); }
+.hh-ico[data-cc="0"] { --lg: 90%; } .hh-ico[data-cc="1"] { --lg: 80%; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hh-ico[data-cc] { background: hsl(var(--h) 45% var(--lgd)); } :root:not([data-theme="light"]) .hh-ico[data-cc="0"] { --lgd: 24%; } :root:not([data-theme="light"]) .hh-ico[data-cc="1"] { --lgd: 34%; } }
+:root[data-theme="dark"] .hh-ico[data-cc] { background: hsl(var(--h) 45% var(--lgd)); } :root[data-theme="dark"] .hh-ico[data-cc="0"] { --lgd: 24%; } :root[data-theme="dark"] .hh-ico[data-cc="1"] { --lgd: 34%; }
+
 /* buttons */
 .hh-addbtn { display: none; }
 .hh-save { font-size: 16px; font-weight: 600; padding: 15px 16px; border-radius: 16px; border: 0; background: var(--coral); color: var(--on-coral); cursor: pointer; box-shadow: 0 10px 22px -12px rgba(255,90,71,.8); }
@@ -561,6 +566,12 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
       </div>
       <label class="hh-field">תאריך<input type="date" id="f-date"></label>
     </div>
+    <div class="hh-field"><span id="meth-label">איך שילמת</span>
+      <div class="hh-seg" role="group" aria-labelledby="meth-label">
+        <button type="button" data-method="card" class="on" aria-pressed="true">אשראי</button>
+        <button type="button" data-method="cash" aria-pressed="false">מזומן</button>
+      </div>
+    </div>
     <label class="hh-toggle"><input type="checkbox" id="f-refund">זה החזר (ביט, מזומן) ולא הוצאה</label>
     <button type="button" class="hh-save" id="f-add" disabled>שמירה</button>
     <button type="button" class="hh-later" id="f-later" hidden>שמירת הקבלה בלבד, אמלא את הפרטים אחר כך</button>
@@ -641,6 +652,7 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
             <div class="hh-field"><span id="x-cat-l">קטגוריה</span>
               <div class="hh-chips hh-fxcats" id="x-catchips" role="group" aria-labelledby="x-cat-l"></div>
               <select id="x-cat" class="hh-vh" tabindex="-1" aria-hidden="true"></select>
+              <input type="text" id="x-newcat" class="hh-sel" maxlength="30" placeholder="שם הקטגוריה החדשה" aria-label="שם הקטגוריה החדשה" autocomplete="off" hidden>
             </div>
             <div class="hh-row2">
               <label class="hh-field" id="x-payer-field">מי משלם<select id="x-payer" class="hh-sel"><option value="p1">אני</option><option value="p2">בן/בת הזוג</option></select></label>
@@ -799,6 +811,23 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
   const KEY = 'budget-app-v1', PKEY = 'budget-app-photos-v1', SKEY = 'budget-app-settings-v1';
   const blankSettings = () => ({income: 0, incomes: [0, 0], savings: 0, cycleDay: 10, fixed: [], credit: [], mode: 'couple', names: ['', ''], setupDone: false});
   const totalIncome = st => r2((Number(st.incomes[0]) || 0) + (st.mode === 'couple' ? (Number(st.incomes[1]) || 0) : 0));
+  // moving from the old address: the old site hands over its data in the link (#import=...), once, into an empty app
+  (function takeOver() {
+    const m = location.hash.match(/^#import=([A-Za-z0-9_\-]+)$/);
+    if (!m) return;
+    try {
+      const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+      const bin = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
+      const d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+      const hasData = (() => { const st = load(SKEY, {}), en = load(KEY, {entries: []}); return !!(st.setupDone || (en.entries || []).length); })();
+      if (!hasData && d && typeof d === 'object') {
+        if (d.store && Array.isArray(d.store.entries)) keep(KEY, {entries: d.store.entries, catmap: Array.isArray(d.store.catmap) ? d.store.catmap : []});
+        if (d.settings && typeof d.settings === 'object' && !Array.isArray(d.settings)) keep(SKEY, d.settings);
+        if (d.lang === 'he' || d.lang === 'en' || d.lang === 'ru') { try { localStorage.setItem('budget-app-lang', d.lang); } catch (e) {} }
+      }
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  })();
   let store = load(KEY, {entries: [], catmap: []});
   let photos = load(PKEY, {});
   let settings = Object.assign(blankSettings(), load(SKEY, {}));
@@ -1015,9 +1044,30 @@ const TINT = {'shopping-cart': 'green', 'utensils': 'pink', 'fuel': 'peach', 'wr
 const CAT_COLOR = {'סופר ותוצרת': '#16a36a', 'אוכל בחוץ ובילויים': '#f26b3a', 'דלק': '#e3a400', 'רכב (טיפול ושונות)': '#7c5cf0', 'בית מרקחת ובריאות': '#e0468f',
   'ביגוד': '#0aa7c2', 'מתנות': '#d9344a', 'בילויים ומשחקים': '#3b7cf6', 'תחבורה': '#8a6a4a', 'חשבונות (חשמל, מים, גז)': '#7a9a12', 'אחר': '#6b7387'};
 const EXTRA_COLORS = ['#0f766e', '#c2410c', '#9333ea', '#be185d', '#1d4ed8', '#4d7c0f', '#b45309', '#0e7490'];
-const catColor = c => { if (CAT_COLOR[c]) return CAT_COLOR[c]; let h = 0; for (const ch of String(c)) h = (h * 31 + ch.codePointAt(0)) >>> 0; return EXTRA_COLORS[h % EXTRA_COLORS.length]; };
+const catColor = c => { const u = catUniq(c); return u ? 'hsl(' + u.h + ' 62% ' + (u.v ? 36 : 48) + '%)' : '#6b7387'; };
 const catDot = (c, size) => { const d = document.createElement('i'); d.className = 'dot'; d.style.setProperty('--k', catColor(c)); d.append(window.hhIcon(iconFor(c), size || 14)); return d; };
-const icoBox = (tag, name) => { const b = document.createElement(tag); b.className = 'hh-ico'; b.dataset.t = TINT[name] || 'grey'; b.append(window.hhIcon(name, 20)); return b; };
+// every category gets its own colour, picked as far as possible from the ones already used; kept on the device
+window.hhCatColors = (() => { try { return JSON.parse(localStorage.getItem('hh-catcolors') || '{}') || {}; } catch (e) { return {}; } })();
+function catUniq(cat) {
+  cat = String(cat || '').trim(); if (!cat) return null;
+  if (window.hhCatColors[cat]) return window.hhCatColors[cat];
+  const used = Object.values(window.hhCatColors);
+  let best = null, bestD = -1;
+  for (let v = 0; v < 2; v++) for (let h = 0; h < 360; h += 4) {
+    let d = 1e9;
+    for (const u of used) { if (u.v === v && u.h === h) { d = 0; break; } d = Math.min(d, Math.min(Math.abs(u.h - h), 360 - Math.abs(u.h - h)) + (u.v === v ? 0 : 40)); }
+    if (d > bestD) { bestD = d; best = {h, v}; }
+  }
+  window.hhCatColors[cat] = best;
+  try { localStorage.setItem('hh-catcolors', JSON.stringify(window.hhCatColors)); } catch (e) {}
+  return best;
+}
+const icoBox = (tag, name, cat) => {
+  const b = document.createElement(tag); b.className = 'hh-ico'; b.dataset.t = TINT[name] || 'grey'; b.append(window.hhIcon(name, 20));
+  const c = cat && name !== 'receipt' ? catUniq(cat) : null;
+  if (c) { b.dataset.cc = String(c.v); b.style.setProperty('--h', c.h); }
+  return b;
+};
 const enc = s => String(s).replace(/%/g, '%25').replace(/&/g, '%26').replace(/=/g, '%3D');
 const dayNum = s => { const [y, m, d] = String(s).split('-').map(Number); return Date.UTC(y, m - 1, d); };
 const dayDiff = (a, b) => Math.round((dayNum(b) - dayNum(a)) / 864e5);
@@ -1029,7 +1079,7 @@ window.hhLearn = [];
 window.hhStatus = '';
 window.hhPick = null;      // category picked by hand, null = automatic
 window.hhNewCat = false;
-window.hhPayer = 'p1';
+window.hhPayer = 'p1'; window.hhMethod = 'card';
 
 function cycleNow() {
   const g = dash.data('cycles');
@@ -1100,7 +1150,7 @@ function catRows(box, rows, total) {
   box.replaceChildren();
   for (const r of rows) {
     const row = el('div', 'hh-crow');
-    const ico = icoBox('div', iconFor(r.k));
+    const ico = icoBox('div', iconFor(r.k), r.k);
     const name = el('div', 'hh-cname');
     name.append(el('span', null, r.k));
     const tr = el('div', 'hh-ctrack'); const i = el('i'); i.style.width = (total > 0 ? Math.max(2, r.v / total * 100) : 0) + '%'; tr.append(i);
@@ -1142,6 +1192,7 @@ dash.draw('explist', box => {
     const meta = el('div', 'hh-imeta');
     meta.append(el('span', null, r.pending ? 'ממתין לפענוח' : r.category));
     if (window.hhIsCouple()) meta.append(document.createTextNode(', '), el('span', null, window.hhPayerName(r.payer)));
+    if (r.cash) meta.append(document.createTextNode(', '), el('span', null, 'מזומן'));
     mid.append(el('div', 'hh-iname', r.item), meta);
     if (r.receipt) {
       const rb = el('button', 'hh-rbtn', window.hhOpenReceipt === r.id ? 'הסתרת הקבלה' : 'הצגת הקבלה'); rb.type = 'button'; rb.prepend(window.hhIcon('receipt', 14));
@@ -1164,7 +1215,7 @@ dash.draw('explist', box => {
       });
       right.append(del);
     }
-    it.append(icoBox('div', r.pending ? 'receipt' : iconFor(r.category)), mid, right);
+    it.append(icoBox('div', r.pending ? 'receipt' : iconFor(r.category), r.category), mid, right);
     if (r.receipt && window.hhOpenReceipt === r.id) {
       const img = el('img', 'hh-rimg'); img.alt = 'קבלה: ' + r.item; img.loading = 'lazy';
       img.addEventListener('error', () => { img.replaceWith(el('p', 'hh-sub hh-rerr', 'לא הצלחתי להציג את התמונה.')); });
@@ -1487,6 +1538,7 @@ async function shrinkPhoto(file) {
   if (!btn || !sheet) return;
   const say = s => { window.hhStatus = s; dash.draw('formstatus'); };
   const reset = () => {
+    if (window.hhSetMethod) window.hhSetMethod('card');
     if (window.hhReceiptReset) window.hhReceiptReset();
     amtEl.value = ''; itemEl.value = ''; refEl.checked = false; if (newEl) newEl.value = ''; window.hhClearPhoto();
     dateEl.value = todayISO(); window.hhPick = null; window.hhNewCat = false; syncNewCat();
@@ -1500,6 +1552,13 @@ async function shrinkPhoto(file) {
   if (fromCamera && camBtn) camBtn.classList.add('big');
   if (closeBtn) closeBtn.addEventListener('click', () => { sheet.hidden = true; if (openBtn) openBtn.hidden = false; });
   itemEl.addEventListener('input', () => { dash.draw('catchips'); dash.draw('cathint'); });
+  window.hhSetMethod = m => {
+    window.hhMethod = m;
+    document.querySelectorAll('.hh-seg [data-method]').forEach(x => {
+      const on = x.dataset.method === m; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on));
+    });
+  };
+  document.querySelectorAll('.hh-seg [data-method]').forEach(b => b.addEventListener('click', () => window.hhSetMethod(b.dataset.method)));
   document.querySelectorAll('.hh-seg [data-payer]').forEach(b => b.addEventListener('click', () => {
     window.hhPayer = b.dataset.payer;
     document.querySelectorAll('.hh-seg [data-payer]').forEach(x => {
@@ -1555,6 +1614,7 @@ async function shrinkPhoto(file) {
       }
       await window.hhDb.collection('entries').add({
         date: dateEl.value, item, category: cat, payer: window.hhPayer, amount, createdAt: new Date().toISOString(),
+        ...(window.hhMethod === 'cash' ? {cash: true} : {}),
         ...(receipt ? {receipt} : {}),
         ...(window.hhRcData && window.hhRcData.items.length ? {store: window.hhRcData.store, items: window.hhRcData.items} : {})
       });
@@ -1573,7 +1633,7 @@ async function shrinkPhoto(file) {
     try {
       const receipt = await uploadPhoto();
       await window.hhDb.collection('entries').add({
-        date: dateEl.value || todayISO(), item: itemEl.value.trim() || 'קבלה', category: '', payer: window.hhPayer,
+        date: dateEl.value || todayISO(), item: itemEl.value.trim() || 'קבלה', category: '', payer: window.hhPayer, ...(window.hhMethod === 'cash' ? {cash: true} : {}),
         amount: 0, pending: true, receipt, createdAt: new Date().toISOString()
       });
       reset();
@@ -1686,24 +1746,36 @@ async function shrinkPhoto(file) {
   });
 
   // ---------- fixed expenses: suggestions, add, edit ----------
-  FIXED_CATS.forEach(c => fCat.append(new Option(c, c)));
+  const fNewCat = $('x-newcat'); let fNewMode = false;
   // the category as colored chips, each with the color and icon it has in the list of fixed expenses
   const fxChips = $('x-catchips');
   const FIXED_COLOR = {'דיור': '#f26b3a', 'חינוך': '#3b7cf6', 'ביטוח': '#16a36a', 'בית וחשבונות': '#e3a400', 'תקשורת ומנויים': '#0aa7c2', 'רכב ותחבורה': '#7c5cf0', 'טיפוח': '#e0468f', 'הלוואות': '#8a6a4a', 'אחר': '#6b7387'};
-  const dotFor = (c, size) => { const d = mk('i', 'dot'); d.style.setProperty('--k', FIXED_COLOR[c] || FIXED_COLOR['אחר']); d.append(window.hhIcon(iconFor(c), size)); return d; };
-  const syncCat = () => { if (fxChips) fxChips.querySelectorAll('[data-c]').forEach(b => { const on = b.dataset.c === fCat.value; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); };
-  if (fxChips) FIXED_CATS.forEach(c => {
-    const b = mk('button', 'hh-cat'); b.type = 'button'; b.dataset.c = c;
-    b.append(dotFor(c, 14), mk('span', null, c));
-    b.addEventListener('click', () => { fCat.value = c; catTouched = true; syncCat(); });
-    fxChips.append(b);
-  });
+  const dotFor = (c, size) => { const d = mk('i', 'dot'); d.style.setProperty('--k', catColor(c)); d.append(window.hhIcon(iconFor(c), size)); return d; };
+  const syncCat = () => { if (fxChips) fxChips.querySelectorAll('[data-c]').forEach(b => { const on = b.dataset.c === fCat.value; b.classList.toggle('on', on && !fNewMode); b.setAttribute('aria-pressed', String(on && !fNewMode)); }); const nb = fxChips && fxChips.querySelector('[data-new]'); if (nb) { nb.classList.toggle('on', fNewMode); nb.setAttribute('aria-pressed', String(fNewMode)); } };
+  const fixedCats = () => { const set = FIXED_CATS.slice(); for (const f of (S().fixed || [])) if (f.category && !set.includes(f.category)) set.push(f.category); return set; };
+  const buildFxChips = () => {
+    const keep = fCat.value, cats = fixedCats();
+    fCat.replaceChildren(...cats.map(c => new Option(c, c)));
+    fCat.value = cats.includes(keep) ? keep : cats[0];
+    if (!fxChips) return;
+    fxChips.replaceChildren();
+    cats.forEach(c => {
+      const b = mk('button', 'hh-cat'); b.type = 'button'; b.dataset.c = c;
+      b.append(dotFor(c, 14), mk('span', null, c));
+      b.addEventListener('click', () => { fNewMode = false; fNewCat.hidden = true; fCat.value = c; catTouched = true; syncCat(); });
+      fxChips.append(b);
+    });
+    const n = mk('button', 'hh-cat new' + (fNewMode ? ' on' : ''), '+ קטגוריה חדשה'); n.type = 'button'; n.dataset.new = '1';
+    n.addEventListener('click', () => { fNewMode = !fNewMode; fNewCat.hidden = !fNewMode; catTouched = true; syncCat(); if (fNewMode) fNewCat.focus(); });
+    fxChips.append(n);
+  };
+  buildFxChips();
   fCat.addEventListener('change', () => { catTouched = true; syncCat(); });
   syncCat();
   fItem.addEventListener('input', () => { pendingSug = null; if (!catTouched) fCat.value = guessFixed(fItem.value); syncCat(); });
   function resetFixedForm(msg) {
-    editing = null; pendingSug = null; catTouched = false;
-    fItem.value = ''; fAmt.value = ''; fCat.value = FIXED_CATS[0]; syncCat();
+    editing = null; pendingSug = null; catTouched = false; fNewMode = false; fNewCat.hidden = true; fNewCat.value = '';
+    buildFxChips(); fItem.value = ''; fAmt.value = ''; fCat.value = FIXED_CATS[0]; syncCat();
     xTitle.textContent = 'הוספת הוצאה קבועה'; fAdd.textContent = '+ הוספה לקבועות'; xEditBtns.hidden = true;
     if (msg != null) fStatus.textContent = msg;
     window.dash.draw('fixsuggest');
@@ -1713,7 +1785,9 @@ async function shrinkPhoto(file) {
     if (!item) { fStatus.textContent = 'כתוב שם להוצאה הקבועה.'; fItem.focus(); return false; }
     if (!(amount > 0)) { fStatus.textContent = 'הכנס סכום חודשי.'; fAmt.focus(); return false; }
     const s = S();
-    const rec = {item, amount, category: fCat.value, payer: mode === 'couple' ? fPayer.value : 'p1'};
+    let catVal = fCat.value;
+    if (fNewMode) { catVal = fNewCat.value.trim(); if (!catVal) { fStatus.textContent = 'כתוב שם לקטגוריה החדשה.'; fNewCat.focus(); return false; } }
+    const rec = {item, amount, category: catVal, payer: mode === 'couple' ? fPayer.value : 'p1'};
     const was = editing;
     const fixed = was ? s.fixed.map(f => f.id === was ? Object.assign({}, f, rec) : f)
       : s.fixed.concat([Object.assign({id: window.hhSettings.newId()}, pendingSug ? {sug: pendingSug} : {}, rec)]);
@@ -1725,7 +1799,8 @@ async function shrinkPhoto(file) {
   function startEdit(f) {
     editing = f.id; pendingSug = null; catTouched = true;
     fItem.value = f.item; fAmt.value = String(f.amount);
-    fCat.value = FIXED_CATS.includes(f.category) ? f.category : 'אחר'; syncCat();
+    fNewMode = false; fNewCat.hidden = true; buildFxChips();
+    fCat.value = fixedCats().includes(f.category) ? f.category : 'אחר'; syncCat();
     fPayer.value = (f.payer === 'p2' || f.payer === 'בן/בת הזוג') ? 'p2' : 'p1';
     xTitle.textContent = 'עריכת הוצאה קבועה'; fAdd.textContent = 'עדכון'; xEditBtns.hidden = false; fStatus.textContent = '';
     window.dash.draw('fixsuggest');
@@ -1764,7 +1839,7 @@ async function shrinkPhoto(file) {
     for (const [cat, items, sum] of sorted) {
       const grp = mk('details', 'hh-group'); grp.open = true;
       const head = mk('summary', 'hh-ghead');
-      head.append(icoBox('span', iconFor(cat)), mk('span', null, cat), mk('span', 'sum', fmts.money(sum)));
+      head.append(icoBox('span', iconFor(cat), cat), mk('span', null, cat), mk('span', 'sum', fmts.money(sum)));
       grp.append(head);
       for (const f of items.slice().sort((a, b) => b.amount - a.amount)) {
         const line = mk('button', 'hh-fline hh-fbtn'); line.type = 'button';
@@ -1972,10 +2047,11 @@ async function shrinkPhoto(file) {
       const meta = mk('div', 'hh-imeta');
       meta.append(mk('span', null, r.pending ? 'ממתין לפענוח' : r.category));
       if (window.hhIsCouple()) meta.append(document.createTextNode(', '), mk('span', null, window.hhPayerName(r.payer)));
+      if (r.cash) meta.append(document.createTextNode(', '), mk('span', null, 'מזומן'));
       mid.append(mk('div', 'hh-iname', r.item), meta);
       const refund = r.amount < 0;
       const amt = r.pending ? mk('span', 'hh-wait', 'ממתין') : mk('div', 'hh-iamt' + (refund ? ' refund' : ''), refund ? '+' + fmts.money(-r.amount) : fmts.money(r.amount));
-      it.append(icoBox('div', r.pending ? 'receipt' : iconFor(r.category)), mid, amt);
+      it.append(icoBox('div', r.pending ? 'receipt' : iconFor(r.category), r.category), mid, amt);
       box.append(it);
     }
   });
@@ -2500,6 +2576,9 @@ async function shrinkPhoto(file) {
     'אני': ['Me', 'Я'],
     'בן/בת הזוג': ['Partner', 'Партнёр'],
     'תאריך': ['Date', 'Дата'],
+    'איך שילמת': ['How did you pay', 'Как вы заплатили'],
+    'אשראי': ['Card', 'Карта'],
+    'מזומן': ['Cash', 'Наличные'],
     'זה החזר (ביט, מזומן) ולא הוצאה': ['This is a refund (Bit, cash), not an expense', 'Это возврат (Bit, наличные), а не расход'],
     'שמירה': ['Save', 'Сохранить'],
     'שמירת הקבלה בלבד, אמלא את הפרטים אחר כך': ["Save the receipt only, I'll fill in the details later", 'Сохранить только чек, детали заполню позже'],
