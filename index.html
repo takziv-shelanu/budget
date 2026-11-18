@@ -294,6 +294,13 @@ html, body { background: var(--bg); color: var(--ink); }
 .hh-settings .hh-danger { align-self: flex-start; margin-top: 6px; }
 .hh-nudge { display: flex; flex-direction: column; gap: 12px; font-size: 15px; }
 .hh-feedback { display: flex; flex-direction: column; gap: 14px; }
+.hh-feedback > summary { cursor: pointer; font-weight: 700; font-size: 15px; min-height: 40px; display: flex; align-items: center; list-style: none; color: var(--ink-2, var(--ink)); }
+.hh-feedback > summary::-webkit-details-marker { display: none; }
+.hh-feedback > summary::after { content: '+'; margin-inline-start: auto; font-size: 20px; }
+.hh-feedback[open] > summary::after { content: '\2212'; }
+.hh-feedback { padding-block: 6px; }
+.hh-feedback[open] { padding-block: 14px; }
+
 .hh-q { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
 .hh-foot { font-size: 12px; color: var(--muted); line-height: 1.5; text-align: center; }
 
@@ -729,8 +736,8 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
     <div class="hh-panel" data-draw="histlist" data-source="cycles histcats"></div>
   </section>
 
-  <section class="hh-card hh-feedback" id="feedback" aria-labelledby="fb-title">
-    <h2 id="fb-title">מה דעתך?</h2>
+  <details class="hh-card hh-feedback" id="feedback">
+    <summary id="fb-title">מה דעתך? שליחת משוב</summary>
     <p class="hh-sub">אחרי שניסית, ענה על כמה שאלות, העתק את המשוב ושלח לי אותו בוואטסאפ.</p>
     <div class="hh-q"><span id="q1">כמה נוח להוסיף הוצאה?</span>
       <div class="hh-chips" role="group" aria-labelledby="q1" data-q="נוחות">
@@ -748,7 +755,7 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
     <button type="button" class="hh-save" id="fb-copy">העתקת המשוב</button>
     <p class="hh-hint" id="fb-status" role="status" aria-live="polite"></p>
     <textarea id="fb-out" class="hh-fbout" rows="5" readonly hidden aria-label="המשוב להעתקה"></textarea>
-  </section>
+  </details>
   </div>
   <p class="hh-foot">גרסת ניסיון. כל מה שאתה מזין נשמר רק במכשיר שלך ולא נשלח לאף אחד.</p>
 
@@ -2667,6 +2674,7 @@ async function shrinkPhoto(file) {
     'מהמחזור הזה נשמרו רק סכומים לפי קטגוריה, בלי פירוט של כל הוצאה.': ['Only category totals were kept for this cycle, without each expense.', 'Для этого цикла сохранены только суммы по категориям.'],
     'הטעינה נכשלה': ['Failed to load', 'Не удалось загрузить'],
     'מה דעתך?': ['What do you think?', 'Что скажете?'],
+    'מה דעתך? שליחת משוב': ['What do you think? Send feedback', 'Что скажете? Отправить отзыв'],
     'אחרי שניסית, ענה על כמה שאלות, העתק את המשוב ושלח לי אותו בוואטסאפ.': ["Once you've tried it, answer a few questions, copy your feedback and send it to me on WhatsApp.", 'Когда попробуете, ответьте на пару вопросов, скопируйте отзыв и пришлите мне в WhatsApp.'],
     'כמה נוח להוסיף הוצאה?': ['How easy is it to add an expense?', 'Насколько удобно добавлять расход?'],
     'היית משתמש בזה בבית?': ['Would you use this at home?', 'Пользовались бы вы этим дома?'],
