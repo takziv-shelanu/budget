@@ -13,7 +13,87 @@
 <title>התקציב שלנו</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff5a47'/%3E%3Ccircle cx='44' cy='20' r='10' fill='%23ffd23f'/%3E%3Cpath d='M16 44h32' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
 <script>try{var __t=localStorage.getItem("hh-theme");if(__t==="light"||__t==="dark")document.documentElement.setAttribute("data-theme",__t)}catch(e){}</script>
-<style>body{margin:0}[hidden]{display:none!important}</style>
+<style>body{margin:0}[hidden]{display:none!important}/* ---------- receipt scanner: photo → scan → check and fix → save ---------- */
+.sc-ov { position: fixed; inset: 0; z-index: 80; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; font-family: var(--font); }
+.sc-ov[hidden], .sc-ov [hidden] { display: none !important; }
+.sc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(8px + env(safe-area-inset-top)) 16px 8px; background: var(--card); box-shadow: var(--shadow); }
+.sc-top h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.sc-top h2:focus { outline: none; }
+.sc-close { background: none; border: 0; color: var(--link); font: inherit; font-size: 15px; min-height: 44px; padding: 0 6px; cursor: pointer; }
+.sc-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.sc-in { max-width: 620px; margin: 0 auto; padding: 16px 16px 128px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; }
+.sc-in > [hidden] { display: none !important; }
+.sc-hint { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.sc-bar { position: absolute; inset-inline: 0; bottom: 0; padding: 18px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 34%); display: flex; justify-content: center; pointer-events: none; }
+.sc-bar > div { width: 100%; max-width: 588px; display: flex; gap: 10px; pointer-events: auto; }
+.sc-bar .hh-save { flex: 1; min-height: 52px; }
+.sc-bar .hh-save:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.sc-btn2 { min-height: 52px; padding: 0 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; }
+.sc-btn2[hidden] { display: none; }
+.sc-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; background: none; border: 0; padding: 0 2px; color: var(--link); font: inherit; font-size: 14px; cursor: pointer; }
+
+/* step 1: the photos */
+.sc-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sc-pick button { min-height: 104px; border: 0; border-radius: 22px; background: var(--card); color: var(--ink); box-shadow: var(--shadow); font: inherit; font-size: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.sc-pick button.sc-cam { background: var(--coral); color: var(--on-coral); }
+.sc-pick button[hidden] { display: none; }
+.sc-pick:has(button[hidden]) { grid-template-columns: 1fr; }
+.sc-pages { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; }
+.sc-page { position: relative; flex: 0 0 auto; width: 92px; height: 128px; border-radius: 14px; overflow: hidden; background: var(--field); box-shadow: var(--shadow); }
+.sc-page img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sc-page b { position: absolute; bottom: 6px; inset-inline-start: 6px; min-width: 24px; height: 24px; border-radius: 999px; background: var(--card); color: var(--ink); font: 600 13px/24px var(--font-num); text-align: center; }
+.sc-page button { position: absolute; top: 4px; inset-inline-end: 4px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(15,19,38,.62); color: #fff; display: grid; place-items: center; cursor: pointer; }
+
+/* step 2: scanning — the one moving thing on the screen */
+.sc-scan { position: relative; border-radius: 22px; overflow: hidden; background: var(--field); max-height: 54vh; box-shadow: var(--shadow); }
+.sc-scan img { width: 100%; display: block; opacity: .9; }
+.sc-scan i { position: absolute; inset-inline: 0; top: 0; height: 3px; background: var(--coral); box-shadow: 0 0 22px 6px rgba(255,90,71,.45); animation: sc-sweep 2.2s ease-in-out infinite alternate; }
+@keyframes sc-sweep { to { top: calc(100% - 3px); } }
+@media (prefers-reduced-motion: reduce) { .sc-scan i { animation: none; top: 50%; } }
+.sc-prog { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.sc-prog i { display: block; height: 100%; width: 0; background: var(--coral); border-radius: inherit; transition: width .35s; }
+.sc-stat { margin: 0; font-size: 15px; color: var(--ink); overflow-wrap: anywhere; }
+
+/* step 3: check and fix */
+.sc-verdict { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 18px; font-size: 15px; line-height: 1.45; }
+.sc-verdict.ok { background: var(--good-soft); color: var(--good); }
+.sc-verdict.warn { background: var(--t-yellow); color: var(--ink); }
+.sc-verdict svg { flex: 0 0 auto; margin-top: 2px; }
+.sc-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sc-fields .sc-wide { grid-column: 1 / -1; }
+.sc-fields .hh-sel { width: 100%; }
+.sc-stick { position: sticky; top: 0; z-index: 3; background: var(--bg); margin: 0 -16px; padding: 6px 16px 10px; display: flex; flex-direction: column; gap: 4px; }
+.sc-shot { position: relative; height: 30vh; overflow: auto; border-radius: 18px; background: var(--field); box-shadow: var(--shadow); }
+.sc-shot[hidden] { display: none; }
+.sc-shot img { display: block; width: 100%; height: auto; }
+.sc-mark { position: absolute; inset-inline: 0; background: rgba(255,90,71,.16); border-block: 2px solid var(--coral); pointer-events: none; }
+.sc-shot.zoom img { width: 230%; max-width: none; }
+.sc-shotbar { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+
+/* the products, printed like the receipt itself */
+.sc-tape { background: var(--card); border-radius: 20px 20px 6px 6px; padding: 16px 14px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; }
+.sc-tape h3 { margin: 0 0 2px; font-size: 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sc-tape h3 span { font: 500 14px var(--font-num); color: var(--muted); }
+.sc-rows { display: flex; flex-direction: column; gap: 6px; }
+.sc-item { display: flex; flex-direction: column; gap: 4px; }
+.sc-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 40px; gap: 6px; align-items: center; padding-inline-start: 8px; border-inline-start: 3px solid transparent; border-radius: 4px; }
+.sc-item.check .sc-row { border-inline-start-color: var(--sun); }
+.sc-row input { min-width: 0; width: 100%; box-sizing: border-box; font-size: 16px; color: var(--ink); background: var(--field); border: 1.5px solid transparent; border-radius: 12px; padding: 10px 10px; font-family: var(--font); }
+.sc-row input.sc-p { font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: left; }
+.sc-row input:focus { border-color: var(--coral); outline: none; }
+.sc-item.check input.sc-n { background: var(--t-yellow); }
+.sc-row button { width: 40px; height: 40px; border: 0; border-radius: 12px; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.sc-note { margin: -2px 0 0; padding-inline-start: 11px; font-size: 12.5px; color: var(--muted); }
+.sc-rule { border: 0; border-top: 2px dashed var(--line); margin: 6px 0 2px; }
+.sc-line { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 15px; }
+.sc-line b { font: 600 16px var(--font-num); font-variant-numeric: tabular-nums; }
+.sc-line input { width: 120px; box-sizing: border-box; font: 600 18px var(--font-num); text-align: left; color: var(--ink); background: var(--field); border: 1.5px solid transparent; border-radius: 12px; padding: 10px; }
+.sc-line input:focus { border-color: var(--coral); outline: none; }
+.sc-line.sc-pay { font-size: 17px; font-weight: 600; }
+.sc-err { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--bad-soft); color: var(--bad); font-size: 14px; }
+.sc-err[hidden] { display: none; }
+@media (max-width: 360px) { .sc-fields { grid-template-columns: 1fr; } .sc-row { grid-template-columns: minmax(0, 1fr) 84px 36px; } }
+</style>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -544,7 +624,7 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
       <button type="button" class="hh-photo" id="photo-cam"><span data-icon="camera" data-size="18"></span><span>צילום קבלה</span></button>
       <button type="button" class="hh-photo hh-photo-alt" id="photo-gal"><span data-icon="image" data-size="18"></span><span>מהגלריה</span></button>
       <input type="file" accept="image/*" capture="environment" id="f-cam" class="hh-vh" tabindex="-1" aria-label="צילום קבלה">
-      <input type="file" accept="image/*" id="f-photo" class="hh-vh" tabindex="-1" aria-label="קבלה מהגלריה">
+      <input type="file" accept="image/*" multiple id="f-photo" class="hh-vh" tabindex="-1" aria-label="קבלה מהגלריה">
       <div class="hh-photo-prev" data-draw="photoprev"></div>
     </div>
     <div class="hh-rc" id="rc" hidden>
@@ -959,7 +1039,8 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
       return {
         onSnapshot(f) { listeners[c].push(f); setTimeout(() => f(snap(c)), 0); return () => {}; },
         async add(d) { const o = Object.assign({id: newId()}, d); store[c].push(o); keep(KEY, store); notify(c); return {id: o.id}; },
-        doc(id) { return { async delete() { store[c] = store[c].filter(o => o.id !== id); keep(KEY, store); notify(c); } }; }
+        doc(id) { return { async delete() { store[c] = store[c].filter(o => o.id !== id); keep(KEY, store); notify(c); },
+          async set(d) { const o = Object.assign({id}, d), k = store[c].findIndex(x => x.id === id); if (k >= 0) store[c][k] = o; else store[c].push(o); keep(KEY, store); notify(c); } }; }
       };
     }
   };
@@ -1220,8 +1301,9 @@ dash.draw('explist', box => {
     if (r.cash) meta.append(document.createTextNode(', '), el('span', null, 'מזומן'));
     mid.append(el('div', 'hh-iname', r.item), meta);
     if (r.receipt) {
-      const rb = el('button', 'hh-rbtn', window.hhOpenReceipt === r.id ? 'הסתרת הקבלה' : 'הצגת הקבלה'); rb.type = 'button'; rb.prepend(window.hhIcon('receipt', 14));
-      rb.addEventListener('click', () => { window.hhOpenReceipt = window.hhOpenReceipt === r.id ? null : r.id; dash.draw('explist'); });
+      const ed = !!(window.hhScanner && r.id);
+      const rb = el('button', 'hh-rbtn', ed ? (r.pending ? 'לסרוק ולבדוק' : 'הקבלה והמוצרים') : window.hhOpenReceipt === r.id ? 'הסתרת הקבלה' : 'הצגת הקבלה'); rb.type = 'button'; rb.prepend(window.hhIcon(ed && !r.pending ? 'pencil' : 'receipt', 14));
+      rb.addEventListener('click', () => { if (ed) { window.hhScanner.edit(r, {scan: !!r.pending}); return; } window.hhOpenReceipt = window.hhOpenReceipt === r.id ? null : r.id; dash.draw('explist'); });
       mid.append(rb);
     }
     const right = el('div');
@@ -1545,6 +1627,7 @@ async function shrinkPhoto(file) {
   const onPick = async (ev) => {
     const f = ev.target.files && ev.target.files[0];
     if (!f) return;
+    if (window.hhScanner) { const files = [...ev.target.files]; ev.target.value = ''; window.hhScanner.open({files}); return; }
     try {
       window.hhPhoto = await shrinkPhoto(f);
       if (laterBtn) laterBtn.hidden = false;
@@ -3158,7 +3241,7 @@ async function shrinkPhoto(file) {
       const png = await new Promise(r => sc.toBlob(r, 'image/png'));
       strips.push({y0, w, h: y1 - y0, bytes: new Uint8Array(await png.arrayBuffer())});
     }
-    return {w, h, strips, canvas: c};
+    return {w, h, strips, canvas: c, fy: y => Math.max(0, Math.min(1, (sy + y / scale) / H0))};
   }
 
   // words of one region grouped into lines, each with its vertical position
@@ -3331,7 +3414,7 @@ async function shrinkPhoto(file) {
   }
 
   async function readOne(E, src, step) {
-    const img = await prep(src), out = {text: [], price: [], qty: []}, n = img.strips.length; window.hhOcrStrips = img.strips; window.hhOcrCanvas = img.canvas;
+    const img = await prep(src), out = {text: [], price: [], qty: [], fy: img.fy}, n = img.strips.length; window.hhOcrStrips = img.strips; window.hhOcrCanvas = img.canvas;
     { const tb = await readTable(E, img.canvas, step); if (tb) { out.table = tb; out.text = tb.text; return out; } }
     let k = 0;
     for (const s of img.strips) {
@@ -3507,7 +3590,8 @@ async function shrinkPhoto(file) {
     const topv = r => { let b = 0, bv = -1; for (const [c, v] of r.votes) if (v > bv) { bv = v; b = c; } return {c: b, v: bv}; };
     const signed = r => { if (r.unknown) return 0; const t = topv(r); return r.neg > 0 || r.kind === 'promo' ? -t.c : t.c; };
     const groups = tp.map(p => {
-      const r = p.table.rows.slice();
+      const r = p.table.rows.slice(), pi = pages.indexOf(p);
+      for (const x of r) x.at = [pi, Math.round((p.fy ? p.fy(x.y) : 0) * 1000) / 1000];
       if (total && r.length) { const L = r[r.length - 1]; if ([...L.votes.keys()].some(c => Math.abs(c - total) <= total * 0.05)) r.pop(); }
       alignNames(r, p.table.names);
       const sure = r.filter(x => !x.unknown && topv(x).v >= 3).length;
@@ -3534,7 +3618,7 @@ async function shrinkPhoto(file) {
       if (dep) { deposits = r2(deposits + v); return; }
       if (c < 0 || r.kind === 'promo') { let rem = Math.abs(v); for (let k = items.length - 1; k >= 0 && rem > 0.004; k--) { const take = Math.min(items[k].price, rem); items[k].price = r2(items[k].price - take); rem = r2(rem - take); } return; }
       if (c <= 0) return;
-      items.push({name: nm.length >= 2 ? nm : 'מוצר', price: v});
+      items.push({name: nm.length >= 2 ? nm : 'מוצר', price: v, at: r.at});
     });
     if (partial && remainder > 0) items.push({name: 'שאר המוצרים (לא נקראו בבירור)', price: r2(remainder / 100)});
     else partial = 0;
@@ -3559,7 +3643,7 @@ async function shrinkPhoto(file) {
     const WEIGHT = t => /\d\.\d{3}(?!\d)/.test(t) && (/ק["״'׳]?ג|kg/i.test(t) || /[xX×]\s*\d|\d\s*[xX×]/.test(t));
     const PAY = /ויזה|visa|מאסטר|master|ישראכרט|isracard|אמריקן|amex|דיינרס|diners|כ\.?א\.?ל/i;
     const discNoAmt = [];
-    const perPage = pages.map(p => {
+    const perPage = pages.map((p, pi) => {
       const items = [], T = p.text;
       let last = null, lastAt = -9, pend = null, ended = false, started = false;
       for (let i = 0; i < T.length; i++) {
@@ -3570,7 +3654,7 @@ async function shrinkPhoto(file) {
         if (pv == null) pv = tv;
         else if (tv != null && tv < 0 && Math.abs(Math.abs(tv) - Math.abs(pv)) < 0.005) pv = tv;   // "0.01-": the minus only shows in the text pass
         const cands = () => candsFrom(decStr(l.t), pl && pl.alts);
-        const push = it => { items.push(it); last = it; lastAt = i; pend = null; started = true; };
+        const push = it => { if (p.fy) it.at = [pi, Math.round(p.fy(l.y) * 1000) / 1000]; items.push(it); last = it; lastAt = i; pend = null; started = true; };
         const wl = l.t.replace(/,/g, '.');
         if (PAY.test(l.t) && tv > 0) { payVal = tv; if (items.length) ended = true; continue; }
         if (!ended && WEIGHT(wl)) {   // "1.285 ק"ג X 17.90" under a product line, or "3.296 x 37.90   124.92" under a name line
@@ -3687,7 +3771,7 @@ async function shrinkPhoto(file) {
         const wide = items.map(it => { const cs = (it.cands || []).slice(), have = new Set(cs.map(x => x.c)); for (const x of it.cands || []) for (const s2 of swaps(x.c)) if (!have.has(s2) && s2 > 0) { have.add(s2); cs.push({c: s2, v: 0.15}); } return {cands: sh(it, cs)}; });
         if (wide.reduce((a, x) => a + x.cands.length, 0) * target <= 2.5e8) pick = solve(wide, target);
       }
-      if (pick) items.forEach((it, i) => { const v = pick[i] / 100; if (r2(it.price) !== r2(v)) { it.price = r2(v); fixed++; } });
+      if (pick) items.forEach((it, i) => { const v = pick[i] / 100; if (r2(it.price) !== r2(v)) { it.price = r2(v); it.fixed = true; fixed++; } });
     }
     for (const it of items) { delete it.cands; delete it.disc; }
     const sum2 = r2(items.reduce((a, x) => a + x.price, 0));
@@ -3715,6 +3799,354 @@ async function shrinkPhoto(file) {
   };
 })();
 </script>
+<script>
+// ---------- the receipt scanner: photos → scan → check and fix every line → save ----------
+(function () {
+  if (window.hhScanner) return;
+  const H = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const icon = (n, s) => { try { return window.hhIcon ? window.hhIcon(n, s || 18) : H('span'); } catch (e) { return H('span'); } };
+  const r2 = v => Math.round(v * 100) / 100;
+  const money = v => (typeof fmts !== 'undefined' && fmts.money) ? fmts.money(v) : '₪' + (+v).toFixed(2);
+  const pnum = s => { const t = String(s == null ? '' : s).replace(/[₪\s]/g, '').replace(/,/g, '.').replace(/[−–]/g, '-'); return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? Number(t) : NaN; };
+  const today = () => typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10);
+  const nrm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const cats = () => { try { return typeof allCats === 'function' ? allCats() : []; } catch (e) { return []; } };
+  const guess = s => { try { const c = s && typeof guessCat === 'function' ? guessCat(s) : ''; return c && c !== 'אחר' ? c : ''; } catch (e) { return ''; } };
+  const photoUrl = async rid => {
+    if (String(rid).startsWith('db:') && typeof dbPhotoUrl === 'function') return await dbPhotoUrl(rid);
+    const u = window.hhBlobUrl ? window.hhBlobUrl(rid) : '';
+    return u || '/_blob/' + rid;
+  };
+  const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('photo')); i.src = src; });
+  const shrink = async f => typeof shrinkPhoto === 'function' ? Object.assign(await shrinkPhoto(f), {file: f}) : {blob: f, file: f};
+  const payers = () => [...document.querySelectorAll('#add [data-payer]')].filter(b => !b.hidden && !b.closest('[hidden]')).map(b => ({v: b.dataset.payer, label: b.textContent.trim()}));
+  const inWebView = /; wv\)/.test(navigator.userAgent);
+  const draw = n => { try { if (window.dash) window.dash.draw(n); } catch (e) {} };
+  const tell = m => { window.hhStatus = m; draw('formstatus'); };
+  const flagged = it => it && (it.fixed || !it.name || it.name === 'מוצר' || /^שאר המוצרים/.test(it.name));
+
+  let ov, ttl, inner, stA, stB, stC, goBtn, secBtn, errBox;
+  let pagesBox, camIn, galIn, camBtn, moreIn;
+  let scanImg, progI, statP;
+  let verdict, fStore, fDate, fCat, payBox, methBox, shotBox, zoomBtn, hideBtn, rowsBox, cntSpan, sumB, depLine, depIn, payIn;
+  let S = null, markEl = null;
+  // tapping a product shows its line on the photo: the reader keeps where on the receipt each line was read
+  function showAt(at) {
+    if (!at || !shotBox || shotBox.hidden) return;
+    const im = shotBox.querySelectorAll('img')[at[0]]; if (!im || !im.clientHeight) return;
+    if (!markEl) markEl = H('div', 'sc-mark');
+    if (markEl.parentElement !== shotBox) shotBox.append(markEl);
+    const bh = Math.max(18, im.clientHeight * 0.024), y = im.offsetTop + at[1] * im.clientHeight;
+    markEl.style.top = Math.round(y - bh / 2) + 'px'; markEl.style.height = Math.round(bh) + 'px'; markEl.hidden = false;
+    const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    shotBox.scrollTo({top: Math.max(0, y - shotBox.clientHeight / 2), behavior: still ? 'auto' : 'smooth'});
+  }
+
+  function seg(label, opts, value, onPick) {
+    const f = H('div', 'hh-field'), l = H('span', null, label), g = H('div', 'hh-seg'); g.setAttribute('role', 'group');
+    const id = 'sc-l' + Math.random().toString(36).slice(2, 7); l.id = id; g.setAttribute('aria-labelledby', id);
+    for (const o of opts) {
+      const b = H('button', null, o.label); b.type = 'button'; b.dataset.v = o.v;
+      b.addEventListener('click', () => { for (const x of g.children) { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); } onPick(o.v); });
+      const on = o.v === value; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); g.append(b);
+    }
+    f.append(l, g); return f;
+  }
+  function field(label, input, wide) { const f = H('label', 'hh-field' + (wide ? ' sc-wide' : '')); f.append(document.createTextNode(label), input); return f; }
+
+  function build() {
+    ov = H('div', 'sc-ov'); ov.hidden = true; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    const top = H('div', 'sc-top'); ttl = H('h2', null, 'סריקת קבלה'); ttl.id = 'sc-title'; ttl.tabIndex = -1; ov.setAttribute('aria-labelledby', 'sc-title');
+    const x = H('button', 'sc-close', 'סגירה'); x.type = 'button'; x.addEventListener('click', close);
+    top.append(ttl, x);
+    const body = H('div', 'sc-body'); inner = H('div', 'sc-in'); body.append(inner);
+    errBox = H('p', 'sc-err'); errBox.hidden = true; errBox.setAttribute('role', 'alert');
+
+    // step 1 — photos
+    stA = H('div'); stA.style.cssText = 'display:flex;flex-direction:column;gap:14px';
+    const pick = H('div', 'sc-pick');
+    camBtn = H('button', 'sc-cam'); camBtn.type = 'button'; camBtn.append(icon('camera', 26), H('span', null, 'צילום'));
+    const galBtn = H('button'); galBtn.type = 'button'; galBtn.append(icon('image', 26), H('span', null, 'מהגלריה'));
+    camIn = H('input', 'hh-vh'); camIn.type = 'file'; camIn.accept = 'image/*'; camIn.setAttribute('capture', 'environment'); camIn.tabIndex = -1; camIn.setAttribute('aria-label', 'צילום קבלה');
+    galIn = H('input', 'hh-vh'); galIn.type = 'file'; galIn.accept = 'image/*'; galIn.multiple = true; galIn.tabIndex = -1; galIn.setAttribute('aria-label', 'קבלה מהגלריה');
+    moreIn = H('input', 'hh-vh'); moreIn.type = 'file'; moreIn.accept = 'image/*'; moreIn.multiple = true; moreIn.tabIndex = -1; moreIn.setAttribute('aria-label', 'עוד חלק של הקבלה');
+    if (inWebView) camBtn.hidden = true;   // the camera does not open inside the Claude app; the gallery does
+    camBtn.addEventListener('click', () => camIn.click()); galBtn.addEventListener('click', () => galIn.click());
+    for (const i of [camIn, galIn]) i.addEventListener('change', async () => { const fs = [...(i.files || [])]; i.value = ''; if (fs.length) await addFiles(fs, false); });
+    moreIn.addEventListener('change', async () => { const fs = [...(moreIn.files || [])]; moreIn.value = ''; if (fs.length) await addFiles(fs, true); });
+    pick.append(camBtn, galBtn);
+    pagesBox = H('div', 'sc-pages');
+    stA.append(H('p', 'sc-hint', 'צלם את כל הקבלה, ישר ובאור טוב. קבלה ארוכה אפשר לצלם בכמה חלקים, מלמעלה למטה.'), pick, pagesBox, camIn, galIn, moreIn);
+
+    // step 2 — scanning
+    stB = H('div'); stB.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+    const sc = H('div', 'sc-scan'); scanImg = H('img'); scanImg.alt = 'הקבלה שנסרקת'; sc.append(scanImg, H('i'));
+    const pg = H('div', 'sc-prog'); progI = H('i'); pg.append(progI);
+    statP = H('p', 'sc-stat', 'סורק…'); statP.setAttribute('role', 'status'); statP.setAttribute('aria-live', 'polite');
+    stB.append(statP, pg, sc, H('p', 'sc-hint', 'זה לוקח בערך חצי דקה. השאר את המסך פתוח.'));
+
+    // step 3 — check and fix
+    stC = H('div'); stC.style.cssText = 'display:flex;flex-direction:column;gap:14px';
+    verdict = H('div', 'sc-verdict'); verdict.setAttribute('role', 'status'); verdict.setAttribute('aria-live', 'polite');
+    const fl = H('div', 'sc-fields');
+    fStore = H('input'); fStore.type = 'text'; fStore.dir = 'auto'; fStore.maxLength = 40; fStore.autocomplete = 'off'; fStore.setAttribute('list', 'rc-stores');
+    fDate = H('input'); fDate.type = 'date';
+    fCat = H('select', 'hh-sel');
+    fStore.addEventListener('input', () => { S.dirty = true; if (!S.catTouched) { const g = guess(fStore.value); if (g) setCat(g); } });
+    fDate.addEventListener('input', () => { S.dirty = true; });
+    fCat.addEventListener('change', () => { S.dirty = true; S.catTouched = true; });
+    payBox = H('div', 'sc-wide'); methBox = H('div', 'sc-wide');
+    fl.append(field('חנות', fStore), field('תאריך', fDate), field('קטגוריה', fCat, true));
+    const fl2 = H('div', 'sc-fields'); fl2.append(payBox, methBox);
+
+    shotBox = H('div', 'sc-shot');
+    const sb = H('div', 'sc-shotbar');
+    hideBtn = H('button', 'sc-link', 'הסתרת התמונה'); hideBtn.type = 'button';
+    hideBtn.addEventListener('click', () => { shotBox.hidden = !shotBox.hidden; hideBtn.textContent = shotBox.hidden ? 'הצגת הקבלה' : 'הסתרת התמונה'; zoomBtn.hidden = shotBox.hidden; });
+    zoomBtn = H('button', 'sc-link', 'הגדלה'); zoomBtn.type = 'button';
+    zoomBtn.addEventListener('click', () => { const z = shotBox.classList.toggle('zoom'); zoomBtn.textContent = z ? 'הקטנה' : 'הגדלה'; });
+    const more = H('button', 'sc-link'); more.type = 'button'; more.append(icon('plus', 16), H('span', null, 'עוד חלק של הקבלה'));
+    more.addEventListener('click', () => moreIn.click());
+    sb.append(hideBtn, zoomBtn, more);
+
+    const tape = H('div', 'sc-tape');
+    const h3 = H('h3', null, 'מוצרים'); cntSpan = H('span'); h3.append(cntSpan);
+    rowsBox = H('div', 'sc-rows');
+    const add = H('button', 'sc-link'); add.type = 'button'; add.append(icon('plus', 16), H('span', null, 'הוספת מוצר'));
+    add.addEventListener('click', () => { const r = rowEl({name: '', price: 0}); rowsBox.append(r); r.querySelector('input').focus(); S.dirty = true; sumUp(); });
+    depLine = H('label', 'sc-line'); depIn = H('input'); depIn.type = 'text'; depIn.inputMode = 'decimal'; depIn.autocomplete = 'off'; depIn.dir = 'ltr';
+    depIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
+    depLine.append(H('span', null, 'פיקדון על בקבוקים'), depIn);
+    const sl = H('div', 'sc-line'); sumB = H('b'); sl.append(H('span', null, 'סכום המוצרים'), sumB);
+    const pl = H('label', 'sc-line sc-pay'); payIn = H('input'); payIn.type = 'text'; payIn.inputMode = 'decimal'; payIn.autocomplete = 'off'; payIn.dir = 'ltr';
+    payIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
+    pl.append(H('span', null, 'לתשלום (₪)'), payIn);
+    tape.append(h3, rowsBox, add, H('hr', 'sc-rule'), depLine, sl, pl);
+    const stick = H('div', 'sc-stick'); stick.append(sb, shotBox);   // the photo stays in view while the products scroll under it
+    stC.append(verdict, fl, stick, tape, fl2);
+
+    inner.append(errBox, stA, stB, stC);
+    const bar = H('div', 'sc-bar'), bi = H('div');
+    secBtn = H('button', 'sc-btn2'); secBtn.type = 'button';
+    goBtn = H('button', 'hh-save'); goBtn.type = 'button';
+    bi.append(secBtn, goBtn); bar.append(bi);
+    secBtn.addEventListener('click', () => { if (S && S.stage === 'scan') close(); else scan(); });
+    goBtn.addEventListener('click', () => { if (!S) return; if (S.stage === 'pick') scan(); else if (S.stage === 'check') save(); });
+    ov.append(top, body, bar);
+    ov.addEventListener('keydown', e => { if (e.key === 'Escape' && S && S.stage !== 'scan') close(); });
+    document.body.append(ov);
+  }
+
+  function setCat(c) {
+    const list = cats(); if (c && !list.includes(c)) list.push(c);
+    if (![...fCat.options].some(o => o.value === c) || fCat.options.length !== list.length) fCat.replaceChildren(...list.map(v => { const o = H('option', null, v); o.value = v; return o; }));
+    fCat.value = c || list[0] || '';
+  }
+  function stage(s) {
+    S.stage = s; stA.hidden = s !== 'pick'; stB.hidden = s !== 'scan'; stC.hidden = s !== 'check';
+    errBox.hidden = true;
+    if (s === 'pick') { goBtn.hidden = false; goBtn.textContent = 'לסרוק'; goBtn.disabled = !S.shots.length; secBtn.hidden = true; }
+    if (s === 'scan') { goBtn.hidden = true; secBtn.hidden = false; secBtn.textContent = 'ביטול'; }
+    if (s === 'check') {
+      goBtn.hidden = false; goBtn.disabled = false; goBtn.textContent = S.mode === 'edit' ? 'שמירת השינויים' : 'שמירת ההוצאה';
+      secBtn.hidden = !(S.shots.length || S.ids.length); secBtn.textContent = 'לסרוק שוב';
+    }
+  }
+  function drawPages() {
+    pagesBox.replaceChildren(...S.shots.map((s, i) => {
+      const p = H('div', 'sc-page'), im = H('img'); im.alt = 'חלק ' + (i + 1) + ' של הקבלה'; im.src = s.url;
+      const del = H('button'); del.type = 'button'; del.setAttribute('aria-label', 'הסרת חלק ' + (i + 1)); del.append(icon('x', 16));
+      del.addEventListener('click', () => { URL.revokeObjectURL(s.url); S.shots.splice(i, 1); drawPages(); stage('pick'); });
+      p.append(im, H('b', null, String(i + 1)), del); return p;
+    }));
+  }
+  async function addFiles(files, rescan) {
+    try {
+      for (const f of files.slice(0, 12 - S.shots.length)) { const s = await shrink(f); s.url = URL.createObjectURL(s.blob || f); S.shots.push(s); }
+    } catch (e) { errBox.textContent = 'לא הצלחתי לפתוח את התמונה. נסה לצלם שוב.'; errBox.hidden = false; return; }
+    S.dirty = true;
+    if (rescan || S.stage === 'pick') { drawPages(); if (rescan) scan(); else { stage('pick'); scan(); } }
+  }
+  async function sources() {
+    const out = [];
+    for (const rid of S.ids) out.push(await loadImg(await photoUrl(rid)));
+    for (const s of S.shots) out.push(s.file || s.blob);
+    return out;
+  }
+  async function photoUrls() {
+    const out = [];
+    for (const rid of S.ids) { try { out.push(await photoUrl(rid)); } catch (e) {} }
+    for (const s of S.shots) out.push(s.url);
+    return out;
+  }
+  async function scan() {
+    if (!S) return;
+    const tok = S.tok = (S.tok || 0) + 1;
+    stage('scan');
+    const urls = await photoUrls(); scanImg.src = urls[0] || '';
+    progI.style.width = '3%'; statP.textContent = 'מכין את הקבלה…';
+    while (window.hhScanBusy) { statP.textContent = 'מסיים סריקה קודמת…'; await new Promise(r => setTimeout(r, 400)); if (!S || S.tok !== tok) return; }
+    const say = m => { if (!S || S.tok !== tok) return; statP.textContent = m; const p = String(m).match(/(\d{1,3})%/); if (p) progI.style.width = Math.max(3, +p[1]) + '%'; };
+    window.hhScanBusy = true;
+    let res = null, fail = '';
+    try {
+      if (typeof window.hhOcrRead !== 'function') throw Object.assign(new Error('script'), {code: 'script'});
+      res = await window.hhOcrRead(await sources(), {say, store: ''});
+    } catch (e) { fail = window.hhOcrMsg ? window.hhOcrMsg(e) : 'לא הצלחתי לקרוא את הקבלה.'; }
+    window.hhScanBusy = false;
+    if (!S || S.tok !== tok) return;
+    S.res = res; S.dirty = true;
+    fill(res || {store: '', date: '', items: [], total: 0, deposits: 0}, null, fail);
+  }
+  function rowEl(it) {
+    const wrap = H('div', 'sc-item' + (flagged(it) ? ' check' : '')), r = H('div', 'sc-row');
+    const n = H('input', 'sc-n'); n.type = 'text'; n.dir = 'auto'; n.maxLength = 60; n.value = it.name === 'מוצר' ? '' : (it.name || ''); n.placeholder = it.name === 'מוצר' ? 'השם לא נקרא' : 'שם המוצר'; n.setAttribute('aria-label', 'שם המוצר');
+    const p = H('input', 'sc-p'); p.type = 'text'; p.inputMode = 'decimal'; p.dir = 'ltr'; p.autocomplete = 'off'; p.value = it.price ? (+it.price).toFixed(2) : ''; p.placeholder = '0.00'; p.setAttribute('aria-label', 'מחיר');
+    const x = H('button'); x.type = 'button'; x.setAttribute('aria-label', 'הסרת השורה'); x.append(icon('x', 16));
+    x.addEventListener('click', () => { wrap.remove(); S.dirty = true; sumUp(); });
+    const touched = () => { S.dirty = true; if (wrap.classList.contains('check')) { wrap.classList.remove('check'); const nt = wrap.querySelector('.sc-note'); if (nt) nt.remove(); } sumUp(); };
+    n.addEventListener('input', touched); p.addEventListener('input', touched);
+    r.append(n, p, x); wrap.append(r); wrap._it = it;
+    wrap.addEventListener('focusin', () => showAt(it.at));
+    if (flagged(it)) wrap.append(H('p', 'sc-note', it.fixed ? 'המחיר תוקן כדי שהסכום יסתדר. השווה לקבלה.' : 'השם לא נקרא. השלם אותו מהקבלה.'));
+    return wrap;
+  }
+  function readRows() {
+    return [...rowsBox.children].map(w => {
+      const [n, p] = w.querySelectorAll('input'), it = Object.assign({}, w._it), price = pnum(p.value);
+      it.name = n.value.trim(); it.price = isFinite(price) ? r2(price) : 0; delete it.fixed;
+      if (it.unit && it.qty && Math.abs(r2(it.unit * it.qty) - it.price) > 0.02) { delete it.unit; delete it.qty; }
+      return it;
+    }).filter(it => it.price || it.name).map(it => Object.assign(it, {name: it.name || 'מוצר'}));
+  }
+  function sumUp() {
+    const items = readRows(), dep = pnum(depIn.value) || 0, s = r2(items.reduce((a, x) => a + x.price, 0) + dep), t = pnum(payIn.value);
+    sumB.textContent = money(s); cntSpan.textContent = items.length ? String(items.length) : '';
+    const left = rowsBox.querySelectorAll('.sc-item.check').length;
+    let cls = 'warn', msg;
+    if (!items.length) msg = 'לא נמצאו מוצרים. אפשר להוסיף אותם ביד, או לשמור רק את הסכום לתשלום.';
+    else if (!(t > 0)) msg = 'הכנס את הסכום לתשלום שבקבלה.';
+    else if (Math.abs(t - s) < 0.005) { cls = 'ok'; msg = 'המוצרים מסתכמים בדיוק בסכום לתשלום.' + (left === 1 ? ' נשארה שורה אחת מסומנת לבדיקה.' : left ? ' נשארו ' + left + ' שורות מסומנות לבדיקה.' : ''); }
+    else if (s < t) msg = 'חסרים ' + money(r2(t - s)) + ' עד הסכום לתשלום. אולי שורה לא נקראה או מחיר נקרא לא נכון.';
+    else msg = 'המוצרים יוצאים ' + money(r2(s - t)) + ' יותר מהסכום לתשלום. אולי שורה נקראה פעמיים או מחיר נקרא לא נכון.';
+    verdict.className = 'sc-verdict ' + cls; verdict.replaceChildren(icon(cls === 'ok' ? 'check' : 'receipt-text', 18), H('span', null, msg));
+  }
+  async function fill(r, entry, fail) {
+    stage('check');
+    const e = entry || S.entry || {};
+    fStore.value = r.store || e.store || (e.item && e.item !== 'קבלה' ? e.item : '') || '';
+    fDate.value = r.date || e.date || today();
+    S.initCat = (entry && e.category) || guess(fStore.value) || (S.entry && S.entry.category && !S.entry.autoCat ? S.entry.category : '') || ((r.items || []).length >= 2 ? 'סופר ותוצרת' : (e.category || 'אחר'));
+    if (!S.catTouched) setCat(S.initCat);
+    const ps = payers();
+    payBox.replaceChildren(); if (ps.length > 1) payBox.append(seg('מי שילם', ps, S.payer, v => { S.payer = v; S.dirty = true; }));
+    methBox.replaceChildren(seg('איך שילמת', [{v: 'card', label: 'אשראי'}, {v: 'cash', label: 'מזומן'}], S.method, v => { S.method = v; S.dirty = true; }));
+    rowsBox.replaceChildren(...(r.items || []).map(rowEl));
+    const dep = r.deposits || 0; depIn.value = dep ? dep.toFixed(2) : ''; depLine.hidden = !dep;
+    const total = r.total || e.amount || 0; payIn.value = total > 0 ? (+total).toFixed(2) : '';
+    const urls = await photoUrls();
+    shotBox.replaceChildren(...urls.map((u, i) => { const im = H('img'); im.alt = 'הקבלה, חלק ' + (i + 1); im.src = u; return im; }));
+    shotBox.hidden = !urls.length; hideBtn.hidden = !urls.length; zoomBtn.hidden = !urls.length; hideBtn.textContent = 'הסתרת התמונה';
+    if (fail) { errBox.textContent = fail + ' אפשר להוסיף את המוצרים ביד.'; errBox.hidden = false; }
+    sumUp();
+    inner.parentElement.scrollTop = 0;
+  }
+  async function upload(shots) {
+    const ids = [];
+    if (!shots.length) return ids;
+    if (!window.hhAssets) throw new Error('no-assets');
+    for (const s of shots) ids.push((await window.hhAssets.upload(s.blob || s.file, {type: 'image/jpeg'})).id);
+    return ids;
+  }
+  async function save() {
+    if (!window.hhDb) { errBox.textContent = 'השמירה לא זמינה כאן.'; errBox.hidden = false; return; }
+    const items = readRows(), dep = r2(pnum(depIn.value) || 0), store = fStore.value.trim();
+    let total = pnum(payIn.value); if (!(total > 0)) total = r2(items.reduce((a, x) => a + x.price, 0) + dep);
+    if (!(total > 0)) { payIn.focus(); errBox.textContent = 'הכנס את הסכום לתשלום שבקבלה.'; errBox.hidden = false; return; }
+    if (total > 1000000) { payIn.focus(); errBox.textContent = 'הסכום גבוה מדי. בדוק שהקלדת נכון.'; errBox.hidden = false; return; }
+    if (!fDate.value) { fDate.focus(); return; }
+    const cat = fCat.value || 'אחר';
+    goBtn.disabled = true; const label = goBtn.textContent; goBtn.textContent = 'שומר…';
+    try {
+      const newIds = await upload(S.shots);
+      const ids = S.ids.concat(newIds);
+      const data = {
+        date: fDate.value, item: store || (S.entry && S.entry.item && S.entry.item !== 'קבלה' ? S.entry.item : 'קבלה'), category: cat,
+        payer: S.payer, amount: r2(total), items, store, readAt: new Date().toISOString(), autoCat: !S.catTouched, scanned: true
+      };
+      if (dep) data.deposits = dep;
+      if (S.method === 'cash') data.cash = true;
+      if (ids.length) { data.receipt = ids[0]; data.receipts = ids; }
+      if (S.catTouched && store && window.hhLearn && !window.hhLearn.some(l => l.key === nrm(store) && l.category === cat)) {
+        try { await window.hhDb.collection('catmap').add({key: nrm(store), category: cat}); } catch (e) {}
+      }
+      if (S.mode === 'edit' && S.entry && S.entry.id) {
+        const out = Object.assign({}, S.entry, data); delete out.id;
+        for (const k of ['pending', 'readNote', 'checkNote', 'cash', 'deposits']) if (!(k in data)) delete out[k];
+        await window.hhDb.collection('entries').doc(S.entry.id).set(out);
+      } else {
+        data.createdAt = new Date().toISOString();
+        await window.hhDb.collection('entries').add(data);
+        const add = document.getElementById('add'), cl = document.getElementById('close-add');
+        if (add && !add.hidden && cl) cl.click();
+      }
+      const msg = 'נשמר: ' + data.item + ', ' + money(data.amount);
+      close(true); tell(msg);
+    } catch (e) {
+      errBox.textContent = e && e.message === 'no-assets' ? 'אי אפשר לשמור תמונות כאן. אפשר לשמור בלי התמונה: הסר את התמונות ונסה שוב.' : 'השמירה נכשלה. נסה שוב.';
+      errBox.hidden = false; goBtn.disabled = false; goBtn.textContent = label;
+    }
+  }
+  function begin(mode, entry) {
+    if (!ov) build();
+    if (S) for (const s of S.shots) URL.revokeObjectURL(s.url);
+    const btn = document.querySelector('#add [data-payer].on');
+    S = {mode, entry: entry || null, shots: [], ids: [], stage: 'pick', dirty: false, catTouched: false,
+      payer: (entry && entry.payer) || window.hhPayer || (btn && btn.dataset.payer) || '', method: entry ? (entry.cash ? 'cash' : 'card') : (window.hhMethod === 'cash' ? 'cash' : 'card')};
+    if (entry) S.ids = (Array.isArray(entry.receipts) && entry.receipts.length ? entry.receipts : entry.receipt ? [entry.receipt] : []).slice();
+    ttl.textContent = mode === 'edit' ? 'הקבלה' : 'סריקת קבלה';
+    ov.hidden = false; document.documentElement.style.overflow = 'hidden';
+    setTimeout(() => ttl.focus(), 30);
+  }
+  function close(saved) {
+    if (!ov || !S) return;
+    if (S.stage === 'check' && S.dirty && saved !== true && S.mode === 'new' && !confirmLeave()) return;
+    S.tok = (S.tok || 0) + 1;
+    for (const s of S.shots) URL.revokeObjectURL(s.url);
+    S = null; ov.hidden = true; document.documentElement.style.overflow = '';
+    draw('explist');
+  }
+  // closing a scanned receipt that was not saved asks once, inline, instead of a browser dialog
+  function confirmLeave() {
+    if (S.leaveAsked) return true;
+    S.leaveAsked = true;
+    errBox.textContent = 'הקבלה עוד לא נשמרה. לחץ שוב על "סגירה" כדי לצאת בלי לשמור.'; errBox.hidden = false; errBox.scrollIntoView({block: 'nearest'});
+    return false;
+  }
+
+  window.hhScanner = {
+    // a new receipt: shots already picked (scan right away) or an empty start
+    open(opts) {
+      const o = opts || {};
+      begin('new', null);
+      drawPages(); stage('pick');
+      if (o.files && o.files.length) addFiles(o.files, false);
+      else if (o.pick === 'camera' && !camBtn.hidden) camIn.click();
+      else if (o.pick === 'gallery') galIn.click();
+    },
+    // a saved expense: its photo and products, to fix and save; scan: read the photo again first
+    edit(entry, opts) {
+      if (!entry) return;
+      begin('edit', entry);
+      drawPages();
+      if (opts && opts.scan && S.ids.length) scan();
+      else fill({store: entry.store || '', date: entry.date, items: entry.items || [], total: entry.amount > 0 ? entry.amount : 0, deposits: entry.deposits || 0}, entry, '');
+    },
+    busy: () => !!window.hhScanBusy
+  };
+})();
+</script>
+
 
 
 </body>
