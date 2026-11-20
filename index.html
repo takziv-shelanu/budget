@@ -2455,7 +2455,7 @@ async function shrinkPhoto(file) {
         try { r = await window.hhOcrRead([file], {say: m => { const pm = String(m).match(/(\d+)%/); showProg(String(m).replace(/…?\s*\d+%/, ''), pm ? +pm[1] / 100 : null); }, store: ''}); }
         catch (e) { if (!/^(script|wasm|gzip)/.test((e && e.code) || '')) throw e; }
       }
-      if (r) cur = {store: r.store, date: r.date, items: r.items.map(it => ({name: it.name, price: it.price, code: it.code || '', qty: it.qty, unit: it.unit})), total: r.total || r.sum, sum: r.sum, fixed: r.fixed, failed: !r.items.length && !r.total};
+      if (r) cur = {store: r.store, date: r.date, items: r.items.map(it => ({name: it.name, price: it.price, code: it.code || '', qty: it.qty, unit: it.unit})), total: r.total || (r.table ? Math.round((r.sum + (r.deposits || 0)) * 100) / 100 : r.sum), sum: r.sum, fixed: r.fixed, partial: r.partial, table: r.table, failed: !r.items.length && !r.total};
       else {
         onProg = m => { if (PHASE[m.status]) showProg(PHASE[m.status], m.status === 'recognizing text' ? m.progress : null); };
         const [w, canvas] = await Promise.all([getWorker(), prep(file)]);
@@ -2476,6 +2476,8 @@ async function shrinkPhoto(file) {
     $('rc-found').textContent = cur.failed ? 'לא הצלחתי לקרוא את הקבלה. אפשר להוסיף את המוצרים ביד או לצלם שוב, קרוב ובאור טוב.'
       : cur.items.length ? 'נמצאו ' + cur.items.length + ' מוצרים' + (cur.items.some(x => !(x.price > 0)) ? ', לחלק מהם חסר מחיר (מסומנים בצבע).' : '.') + ' בדוק ותקן לפני השמירה.' : 'לא נמצאו מוצרים. אפשר לצלם שוב, קרוב ובאור טוב, או להוסיף ביד.';
     sumUp();
+    if (cur.partial) $('rc-found').textContent += ' חלק מהחשבונית צולם בעיקום ולא נקרא בבירור, אז הוספתי שורה אחת עם שאר הסכום. בדוק מול החשבונית.';
+    else if (cur.table) $('rc-found').textContent += ' נקרא מטבלת חשבונית. בדוק את השורות מול הנייר.';
     if (cur.fixed) $('rc-found').textContent += ' תיקנתי ' + cur.fixed + ' מחירים כדי שהסכום יסתדר. בדוק מול הקבלה.';
   }
   $('rc-add').addEventListener('click', () => { const r = rowEl({name: '', price: 0}); list.append(r); r.querySelector('input').focus(); sumUp(); });
@@ -3106,7 +3108,7 @@ async function shrinkPhoto(file) {
       const png = await new Promise(r => sc.toBlob(r, 'image/png'));
       strips.push({y0, w, h: y1 - y0, bytes: new Uint8Array(await png.arrayBuffer())});
     }
-    return {w, h, strips};
+    return {w, h, strips, canvas: c};
   }
 
   // words of one region grouped into lines, each with its vertical position
@@ -3128,8 +3130,159 @@ async function shrinkPhoto(file) {
     return best && d < Math.max(l.h, best.h) * 0.7 ? best : null;
   };
 
+    // ---------- tables: "פרטי חשבון" invoices (barcode | description | price | qty | amount, amount at the far left) ----------
+  const wordsOf = tsv => {
+    const out = [];
+    for (const row of String(tsv || '').split('\n')) {
+      const q = row.split('\t'); if (q[0] !== '5' || q.length < 12) continue;
+      const t = q.slice(11).join(' ').replace(/[‎‏‪-‮]/g, '').trim(); if (t) out.push({x: +q[6], y: +q[7], w: +q[8], h: +q[9], t, key: q[2] + '.' + q[3] + '.' + q[4]});
+    }
+    return out;
+  };
+  async function cropRead(E, api, cv, r, sc, psm) {
+    const c = document.createElement('canvas'); c.width = Math.max(8, Math.round(r.w * sc)); c.height = Math.max(8, Math.round(r.h * sc));
+    const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(cv, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
+    const png = await new Promise(res => c.toBlob(res, 'image/png'));
+    E.M.FS.writeFile('/input', new Uint8Array(await png.arrayBuffer()));
+    api.SetPageSegMode(psm); api.SetImageFile(1, 0); api.SetRectangle(0, 0, c.width, c.height); api.Recognize(null);
+    return wordsOf(api.GetTSVText(0)).map(w => ({x: r.x + w.x / sc, y: r.y + w.y / sc, w: w.w / sc, h: w.h / sc, t: w.t, key: w.key}));
+  }
+  const DEC = /^-?\d{1,4}\.\d{2}$/;
+  const median = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
+  function gapClusters(items, key, gap) {
+    const s = items.slice().sort((a, b) => key(a) - key(b)), out = [];
+    for (const it of s) { const c = out[out.length - 1]; if (c && key(it) - key(c[c.length - 1]) <= gap) c.push(it); else out.push([it]); }
+    return out;
+  }
+  // a reading of an amount ("21.10", "21 10", "2110", "0.3", "-5 50") as cents, with whether a minus sign was seen
+  function normAmount(s) {
+    s = String(s).replace(/,/g, '.').replace(/[^0-9.\-\s]/g, ' ').trim(); if (!s) return null;
+    const neg = /-/.test(s); s = s.replace(/-/g, '').replace(/\s+/g, ' ').trim();
+    let m = s.match(/^(\d{1,4})\s?\.\s?(\d{1,2})$/);
+    if (m) return {c: Number(m[1]) * 100 + Number(m[2].padEnd(2, '0')), neg};
+    m = s.match(/^(\d{1,4}) (\d{2})$/);
+    if (m) return {c: Number(m[1]) * 100 + Number(m[2]), neg};
+    const d = s.replace(/\D/g, '');
+    if (d.length >= 3 && d.length <= 6) return {c: Number(d.slice(0, -2)) * 100 + Number(d.slice(-2)), neg};
+    return null;
+  }
+  const CONF = {0: '986', 9: '0', 8: '03', 3: '8', 6: '50', 5: '6', 1: '7', 7: '1'};
+  function swaps(c) {
+    const s = String(c), out = new Set();
+    for (let i = 0; i < s.length; i++) for (const r of CONF[s[i]] || '') { const t = s.slice(0, i) + r + s.slice(i + 1); if (t[0] !== '0' || t.length === 1) out.add(Number(t)); }
+    out.delete(c); return [...out];
+  }
+  const isPromo = t => /(^|\s)ב[-\s]*\d/.test(t) || /\d\s*%|%\s*\d/.test(t);
+  const isDeposit = t => /פק?י?דון/.test(t);
+
+  // is this photo a table, and where is the amount column?
+  async function findTable(E, cv) {
+    E.nums.SetVariable('tessedit_char_whitelist', '0123456789.,-x');
+    const ws = await cropRead(E, E.nums, cv, {x: 0, y: 0, w: cv.width, h: cv.height}, 1, 11);
+    const dec = ws.filter(w => DEC.test(w.t.replace(/,/g, '.')));
+    if (dec.length < 12) return null;
+    const cl = gapClusters(dec, w => w.x + w.w, 90).filter(c => c.length >= 5);
+    if (cl.length < 2) return null;
+    const a = cl[0], b = cl[1];
+    if (a.length < 3 || b.length < 8 || Math.min(...b.map(w => w.x + w.w)) - Math.max(...a.map(w => w.x + w.w)) < cv.width * 0.12) return null;
+    const ys = a.concat(b).map(w => w.y);
+    return {amt: a, price: b, ws, y0: Math.min(...ys), y1: Math.max(...ys.concat(a.map(w => w.y + w.h)))};
+  }
+
+  async function readTable(E, cv, step) {
+    const f = await findTable(E, cv); if (!f) return null;
+    step(0.15);
+    const pitchGuess = (() => { const d = f.price.slice().sort((a, b) => a.y - b.y).slice(1).map((w, i, a) => 0).length ? f.price.slice().sort((a, b) => a.y - b.y).map((w, i, a) => i ? w.y - a[i - 1].y : 0).filter(x => x > 12).sort((a, b) => a - b) : []; return d.length ? d[Math.floor(d.length * 0.25)] : 40; })();
+    const ax0 = Math.max(0, Math.min(...f.amt.map(w => w.x)) - 70), ax1 = Math.min(cv.width, Math.max(...f.amt.map(w => w.x + w.w)) + 55);
+    const cy0 = Math.max(0, f.y0 - 90), cy1 = Math.min(cv.height, f.y1 + 120);
+    const col = {x: ax0, y: cy0, w: ax1 - ax0, h: cy1 - cy0};
+    // the amount column read band by band: the page is curved, so each band is straightened by its own angle first
+    const lns = [];
+    const bandH = Math.round(pitchGuess * 8), stepH = Math.round(pitchGuess * 5);
+    const padX = 60, bw = col.w + 2 * padX;
+    for (let by = col.y, bi = 0; by < col.y + col.h - pitchGuess * 2 || bi === 0; by += stepH, bi++) {
+      const bh = Math.min(bandH, col.y + col.h - by); if (bh < pitchGuess * 2) break;
+      const draw = (th, sc) => {
+        const c = document.createElement('canvas'); c.width = Math.round(bw * sc); c.height = Math.round(bh * sc);
+        const g = c.getContext('2d', {willReadFrequently: true}); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.imageSmoothingQuality = 'high';
+        g.translate(c.width / 2, c.height / 2); g.rotate(th * Math.PI / 180); g.scale(sc, sc);
+        g.drawImage(cv, col.x - padX, by, bw, bh, -bw / 2, -bh / 2, bw, bh); return c;
+      };
+      const score = c => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, rs = new Float32Array(c.height); for (let y = 0; y < c.height; y++) { let n = 0; for (let x = 0; x < c.width; x += 2) if (d[(y * c.width + x) * 4] < 110) n++; rs[y] = n; } let t = 0; for (let y = 1; y < c.height; y++) { const dd = rs[y] - rs[y - 1]; t += dd * dd; } return t; };
+      let best = 0, bs = -1; for (let th = -14; th <= 14; th += 1) { const sc = score(draw(th, 1)); if (sc > bs * 1.02 || (th === 0 && sc >= bs)) { bs = Math.max(sc, bs); best = th; } }
+      const sn = Math.sin(best * Math.PI / 180), cs = Math.cos(best * Math.PI / 180);
+      for (const [sc, psm] of [[2, 6], [3, 6], [3, 11]]) {
+        const c = draw(best, sc), png = await new Promise(res => c.toBlob(res, 'image/png'));
+        E.M.FS.writeFile('/input', new Uint8Array(await png.arrayBuffer()));
+        E.nums.SetPageSegMode(psm); E.nums.SetImageFile(1, 0); E.nums.SetRectangle(0, 0, c.width, c.height); E.nums.Recognize(null);
+        const ws = wordsOf(E.nums.GetTSVText(0)).map(w => { const u = (w.x + w.w / 2 - c.width / 2) / sc, v = (w.y + w.h / 2 - c.height / 2) / sc; return {x: u * cs + v * sn, y: by + bh / 2 + (-u * sn + v * cs), t: w.t, u}; });
+        for (const g of gapClusters(ws, w => w.y, pitchGuess * 0.4)) lns.push({y: median(g.map(w => w.y)), t: g.slice().sort((p, q) => p.u - q.u).map(w => w.t).join(' '), v: psm});
+      }
+      step(0.15 + 0.55 * Math.min(1, (by - col.y) / col.h));
+    }
+    for (const w of f.amt) lns.push({y: w.y + w.h / 2, t: w.t, v: 0});
+    // rows: lines from the different readings at the same height
+    const pitchRows = []; for (const l of lns.slice().sort((a, b) => a.y - b.y)) { const c = pitchRows[pitchRows.length - 1]; if (c && Math.abs(l.y - c.mean) <= pitchGuess * 0.45) { c.push(l); c.mean = c.reduce((a, x) => a + x.y, 0) / c.length; } else { const n = [l]; n.mean = l.y; pitchRows.push(n); } }
+    let rows = pitchRows.filter(c => c.length >= 2 || c.some(l => normAmount(l.t))).map(c => {
+      const votes = new Map(), negV = c.filter(l => /-/.test(l.t)).length;
+      for (const l of c) { const n = normAmount(l.t); if (n && n.c > 0 && n.c < 500000) votes.set(n.c, (votes.get(n.c) || 0) + 1); }
+      return {y: median(c.map(l => l.y)), n: c.length, votes, neg: negV};
+    });
+    const pitch = median(rows.slice(1).map((r, i) => r.y - rows[i].y).filter(d => d > 8)) || pitchGuess;
+    // rows no reading could make sense of are only kept when they sit between valid rows
+    const out = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (i && out.length) { const gap = r.y - out[out.length - 1].y, miss = Math.round(gap / pitch) - 1; for (let k = 0; k < miss && k < 3; k++) out.push({y: out[out.length - 1].y + pitch, votes: new Map(), neg: 0, n: 0, unknown: true}); }
+      out.push(r);
+    }
+    rows = out;
+    while (rows.length && !rows[rows.length - 1].votes.size) rows.pop();
+    while (rows.length > 1 && !rows[0].votes.size && !rows[1].votes.size) rows.shift();
+    for (const r of rows) if (!r.votes.size) r.unknown = true;
+    const aY0 = rows.length ? rows[0].y : f.y0, aY1 = rows.length ? rows[rows.length - 1].y : f.y1;
+    // descriptions: Hebrew, between the price column and the barcodes
+    const pR = Math.min(...f.price.map(w => w.x + w.w)), pRmax = Math.max(...f.price.map(w => w.x + w.w));
+    const bars = f.ws.filter(w => /^\d{11,14}$/.test(w.t)).map(w => w.x).sort((a, b) => a - b);
+    const bL = bars.length >= 3 ? bars[Math.floor(bars.length * 0.15)] : cv.width * 0.8;
+    const dx0 = Math.max(0, Math.round(pRmax + 12)), dx1 = Math.min(cv.width, Math.round(bL - 8));
+    let names = [];
+    if (dx1 - dx0 > 120) {
+      const dy0 = Math.max(0, aY0 - 60), dy1 = Math.min(cv.height, aY1 + 120);
+      const ws = await cropRead(E, E.text, cv, {x: dx0, y: dy0, w: dx1 - dx0, h: dy1 - dy0}, 1, 6); step(0.75);
+      const L = new Map(); for (const w of ws) { const l = L.get(w.key) || {top: w.y, bot: w.y + w.h, t: []}; l.top = Math.min(l.top, w.y); l.bot = Math.max(l.bot, w.y + w.h); l.t.push(w.t); L.set(w.key, l); }
+      names = [...L.values()].map(l => ({y: (l.top + l.bot) / 2, t: l.t.join(' ')})).sort((a, b) => a.y - b.y)
+        .filter(l => (l.t.match(/[א-ת]/g) || []).length >= 3 && l.y > aY0 - 25 && !/תאור|ברקוד|מחיר|כמות|סכום/.test(l.t));
+    }
+    // top (store, date) and bottom (total, date) of the page
+    const top = {x: 0, y: 0, w: cv.width, h: Math.max(0, Math.min(cv.height, Math.round(aY0 - 40)))};
+    const regions = [];
+    if (top.h > 60) regions.push(top);
+    const bot = {x: 0, y: Math.round(aY1 + pitch * 1.5), w: cv.width, h: 0}; bot.h = Math.min(cv.height - bot.y, 900);
+    if (bot.h > 80) regions.push(bot);
+    const text = [], tot = new Map();
+    for (const r of regions) {
+      const ws = await cropRead(E, E.text, cv, r, 1, 6);
+      const L = new Map(); for (const w of ws) { const l = L.get(w.key) || {y: w.y, t: []}; l.t.push(w.t); L.set(w.key, l); }
+      for (const l of L.values()) text.push({y: l.y, h: 20, t: l.t.join(' ')});
+    }
+    step(0.85);
+    if (bot.h > 80) {
+      for (const [sc, psm] of [[1.5, 11], [2, 6]]) {
+        const ws = await cropRead(E, E.nums, cv, bot, sc, psm);
+        for (const l of gapClusters(ws, w => w.y + w.h / 2, pitch * 0.5)) { const n = normAmount(l.sort((a, b) => a.x - b.x).map(w => w.t).join(' ')); if (n && n.c >= 100 && n.c < 500000) tot.set(n.c, (tot.get(n.c) || 0) + 1); }
+      }
+      for (const l of text) for (const m of l.t.replace(/,/g, '.').matchAll(/\d{2,5}\.\d{2}(?!\d)/g)) { const c = Math.round(Number(m[0]) * 100); tot.set(c, (tot.get(c) || 0) + 1); }
+    }
+    step(1);
+    const priceVals = f.price.slice().sort((a, b) => a.y - b.y).map(w => { const n = normAmount(w.t); return n && n.c > 0 && n.c < 500000 ? n.c : 0; }).filter(Boolean);
+    rows.forEach((r, i) => { r.alt = []; for (let k = Math.max(0, i - 4); k <= Math.min(priceVals.length - 1, i + 4); k++) r.alt.push(priceVals[k]); });
+    return {rows, names, text, totals: [...tot.entries()].map(([c, v]) => ({c, v})), pitch};
+  }
+
   async function readOne(E, src, step) {
-    const img = await prep(src), out = {text: [], price: [], qty: []}, n = img.strips.length; window.hhOcrStrips = img.strips;
+    const img = await prep(src), out = {text: [], price: [], qty: []}, n = img.strips.length; window.hhOcrStrips = img.strips; window.hhOcrCanvas = img.canvas;
+    { const tb = await readTable(E, img.canvas, step); if (tb) { out.table = tb; out.text = tb.text; return out; } }
     let k = 0;
     for (const s of img.strips) {
       E.M.FS.writeFile('/input', s.bytes);
@@ -3204,7 +3357,112 @@ async function shrinkPhoto(file) {
     return parts.join(' ').replace(/^[\s\-.:*,]+|[\s\-.:*,]+$/g, '').trim();
   }
 
+  
+  function alignNames(rows, names) {
+    const n = rows.length, m = names.length; if (!n || !m) return;
+    const top = r => { let b = 0, bv = -1; for (const [c, v] of r.votes) if (v > bv) { bv = v; b = c; } return b; };
+    const ds = []; for (const r of rows) for (const d of names) { const x = d.y - r.y; if (x > -60 && x < 230) ds.push(x); }
+    let off = 40, bc = 0; for (let c = -40; c < 220; c += 4) { const k = ds.filter(x => Math.abs(x - c) <= 18).length; if (k > bc) { bc = k; off = c; } }
+    const compat = (r, d) => compat0(r, d) - Math.min(3, Math.max(0, Math.abs(d.y - r.y - off) - 32) * 0.04);
+    const compat0 = (r, d) => {
+      const c = r.unknown ? 0 : top(r), neg = r.neg > 0, dep = isDeposit(d.t), pro = isPromo(d.t) && !dep;
+      if (r.unknown) return 0.2;
+      if (dep) return c <= 300 && c % 30 === 0 ? 2 : c <= 900 ? 0.2 : -1.5;
+      if (pro) return neg ? 2 : c >= 100 ? 0.8 : 0;
+      if (neg) return -1;
+      return c <= 300 && c % 30 === 0 ? -0.3 : 1.5;
+    };
+    const F = [], B = [];
+    for (let i = 0; i <= n; i++) { F.push(new Float32Array(m + 1)); B.push(new Uint8Array(m + 1)); }
+    for (let i = 1; i <= n; i++) { F[i][0] = F[i - 1][0] - 0.6; B[i][0] = 1; }
+    for (let j = 1; j <= m; j++) { F[0][j] = F[0][j - 1] - 0.35; B[0][j] = 2; }
+    for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
+      const a = F[i - 1][j - 1] + compat(rows[i - 1], names[j - 1]), b = F[i - 1][j] - 0.6, c = F[i][j - 1] - 0.35;
+      if (a >= b && a >= c) { F[i][j] = a; B[i][j] = 0; } else if (b >= c) { F[i][j] = b; B[i][j] = 1; } else { F[i][j] = c; B[i][j] = 2; }
+    }
+    let i = n, j = m;
+    while (i > 0 || j > 0) {
+      const mv = B[i][j];
+      if (i > 0 && j > 0 && mv === 0) { const d = names[j - 1].t; rows[i - 1].raw = d; rows[i - 1].kind = isDeposit(d) ? 'deposit' : isPromo(d) ? 'promo' : 'product'; i--; j--; }
+      else if (i > 0 && (mv === 1 || j === 0)) i--; else j--;
+    }
+  }
+  function solveSigned(items, T) {
+    const OFF = 6000, SZ = T + 2 * OFF + 1, NEG = -1e9;
+    let cur = new Float32Array(SZ).fill(NEG); cur[OFF] = 0; const back = [];
+    for (const it of items) {
+      const nxt = new Float32Array(SZ).fill(NEG), bk = new Int16Array(SZ).fill(-1), cs = it.cands;
+      for (let s = 0; s < SZ; s++) { const b = cur[s]; if (b === NEG) continue; for (let j = 0; j < cs.length; j++) { const t2 = s + cs[j].c; if (t2 < 0 || t2 >= SZ) continue; const sc = b + cs[j].v; if (sc > nxt[t2]) { nxt[t2] = sc; bk[t2] = j; } } }
+      back.push(bk); cur = nxt;
+    }
+    if (cur[T + OFF] === NEG) return null;
+    const pick = new Array(items.length); let s = T + OFF;
+    for (let i = items.length - 1; i >= 0; i--) { const j = back[i][s]; pick[i] = items[i].cands[j].c; s -= pick[i]; }
+    return pick;
+  }
+  function candsOf(r) {
+    const cs = new Map(), add = (c, v) => { if (c) cs.set(c, (cs.get(c) || 0) + v); };
+    if (r.unknown) { for (let c = 10; c <= 6000; c += 10) { add(c, 0.01); if (c <= 1500) add(-c, 0.01); } return [...cs].map(([c, v]) => ({c, v})); }
+    const promo = r.kind === 'promo', named = !!r.kind, neg = r.neg > 0;
+    const wPos = promo ? 0.1 : named ? (neg ? 0.6 : 1) : (neg ? 0.3 : 1), wNeg = promo ? 1 : named ? (neg ? 0.8 : 0.05) : (neg ? 1 : 0.2);
+    for (const [c, v] of r.votes) {
+      add(c, v * wPos); add(-c, v * wNeg);
+      for (const s of swaps(c)) add(wPos >= wNeg ? s : -s, 0.12 * Math.max(wPos, wNeg));
+    }
+    if (!promo) for (const c of r.alt || []) add(wPos >= wNeg ? c : -c, 0.3 * Math.max(wPos, wNeg));
+    return [...cs].map(([c, v]) => ({c, v})).sort((a, b) => b.v - a.v).slice(0, 24);
+  }
+  function parseTable(pages, fallbackStore) {
+    const tp = pages.filter(p => p.table);
+    const all = pages.map(p => p.text.map(l => l.t).join('\n')).join('\n'), flat = sq(all);
+    let store = ''; for (const s of STORES) if (flat.includes(sq(s))) { store = s.replace('סופר-פארם', 'סופר פארם'); break; }
+    if (!store && fallbackStore && fallbackStore !== 'קבלה') store = fallbackStore;
+    let date = ''; const dm = all.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2})(?!\d)/);
+    if (dm) { const [, d, m, y] = dm; if (+m >= 1 && +m <= 12 && +d >= 1 && +d <= 31) date = y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0'); }
+    // the total: a figure under the table, read at least twice (the payment lines repeat it)
+    const tv = new Map(); for (const p of tp) for (const x of p.table.totals) tv.set(x.c, (tv.get(x.c) || 0) + x.v);
+    let S0 = 0; for (const p of tp) for (const r of p.table.rows) { let b = 0, bv = -1; for (const [c, v] of r.votes) if (v > bv) { bv = v; b = c; } S0 += r.neg > 0 ? -b : b; }
+    let total = 0, tvBest = 0; for (const [c, v] of tv) if (v >= 2 && c >= S0 * 0.35 && c <= S0 * 1.6 && (v > tvBest || (v === tvBest && c > total))) { total = c; tvBest = v; }
+    const topv = r => { let b = 0, bv = -1; for (const [c, v] of r.votes) if (v > bv) { bv = v; b = c; } return {c: b, v: bv}; };
+    const signed = r => { if (r.unknown) return 0; const t = topv(r); return r.neg > 0 || r.kind === 'promo' ? -t.c : t.c; };
+    const groups = tp.map(p => {
+      const r = p.table.rows.slice();
+      if (total && r.length) { const L = r[r.length - 1]; if ([...L.votes.keys()].some(c => Math.abs(c - total) <= total * 0.05)) r.pop(); }
+      alignNames(r, p.table.names);
+      const sure = r.filter(x => !x.unknown && topv(x).v >= 3).length;
+      return {rows: r, conf: r.length > 0 && sure >= r.length * 0.85};
+    });
+    const sure = groups.filter(g => g.conf), shaky = groups.filter(g => !g.conf);
+    let rows = sure.flatMap(g => g.rows), fixed = 0, partial = 0, remainder = 0;
+    let vals = rows.map(signed);
+    if (total && rows.length <= 140 && total <= 300000 && !shaky.length) {
+      const unk = rows.filter(r => r.unknown).length;
+      if (vals.reduce((a, b) => a + b, 0) !== total && unk <= 1) {
+        const pick = solveSigned(rows.map(r => ({cands: candsOf(r)})), total);
+        if (pick) { const ch = pick.filter((c, i) => c !== vals[i]).length; if (ch <= Math.max(3, rows.length * 0.08)) { fixed = ch; vals = pick; } }
+      }
+    }
+    if (shaky.length) {
+      if (total) { remainder = total - vals.reduce((a, b) => a + b, 0); partial = shaky.length; }
+      else { rows = rows.concat(shaky.flatMap(g => g.rows)); vals = rows.map(signed); }
+    }
+    const items = []; let deposits = 0;
+    rows.forEach((r, i) => {
+      const c = vals[i], v = r2(c / 100), nm = r.raw ? cleanName(r.raw) : '';
+      const dep = r.kind === 'deposit' || (!r.kind && c > 0 && c <= 300 && c % 30 === 0);
+      if (dep) { deposits = r2(deposits + v); return; }
+      if (c < 0 || r.kind === 'promo') { let rem = Math.abs(v); for (let k = items.length - 1; k >= 0 && rem > 0.004; k--) { const take = Math.min(items[k].price, rem); items[k].price = r2(items[k].price - take); rem = r2(rem - take); } return; }
+      if (c <= 0) return;
+      items.push({name: nm.length >= 2 ? nm : 'מוצר', price: v});
+    });
+    if (partial && remainder > 0) items.push({name: 'שאר המוצרים (לא נקראו בבירור)', price: r2(remainder / 100)});
+    else partial = 0;
+    const sum = r2(items.reduce((a, x) => a + x.price, 0));
+    return {store, date, items, total: total ? r2(total / 100) : 0, sum, deposits, fixed, partial, table: true};
+  }
+
   function parse(pages, fallbackStore) {
+    if (pages.some(p => p.table)) return parseTable(pages, fallbackStore);
     const all = pages.map(p => p.text.map(l => l.t).join('\n')).join('\n');
     const flat = sq(all);
     let store = '';
@@ -3315,7 +3573,6 @@ async function shrinkPhoto(file) {
     return 'לא הצלחתי לקרוא את הקבלה.';
   };
 })();
-
 </script>
 
 
