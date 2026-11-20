@@ -3054,6 +3054,42 @@ async function shrinkPhoto(file) {
     return {M, text, nums};
   })().catch(e => { engP = null; throw e; }));
 
+  // finds the white paper in a photo with a dark background: bright cells, the biggest connected patch, its box and the span of every row
+  function findPaper(bmp, W, H) {
+    const gw = 100, gh = Math.max(20, Math.round(100 * H / W)), cv = document.createElement('canvas'); cv.width = gw; cv.height = gh;
+    const cx = cv.getContext('2d', {willReadFrequently: true}); cx.imageSmoothingQuality = 'high'; cx.drawImage(bmp, 0, 0, gw, gh);
+    const d = cx.getImageData(0, 0, gw, gh).data, v = new Float32Array(gw * gh), hist = new Float64Array(256);
+    for (let i = 0; i < gw * gh; i++) { v[i] = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000; hist[v[i] | 0]++; }
+    let tot = gw * gh, sumAll = 0; for (let t = 0; t < 256; t++) sumAll += t * hist[t];
+    let wB = 0, sB = 0, best = 0, th = 128;
+    for (let t = 0; t < 256; t++) { wB += hist[t]; if (!wB || wB === tot) continue; sB += t * hist[t]; const mB = sB / wB, mF = (sumAll - sB) / (tot - wB), bt = wB * (tot - wB) * (mB - mF) * (mB - mF); if (bt > best) { best = bt; th = t; } }
+    if (th < 60) return null;
+    const bright = new Uint8Array(gw * gh); for (let i = 0; i < gw * gh; i++) bright[i] = v[i] > th ? 1 : 0;
+    const lab = new Int32Array(gw * gh), sizes = [0]; let n = 0;
+    for (let i = 0; i < gw * gh; i++) {
+      if (!bright[i] || lab[i]) continue;
+      n++; let cnt = 0; const st = [i]; lab[i] = n;
+      while (st.length) { const p = st.pop(); cnt++; const x = p % gw, y = (p / gw) | 0; for (const q of [x > 0 ? p - 1 : -1, x < gw - 1 ? p + 1 : -1, y > 0 ? p - gw : -1, y < gh - 1 ? p + gw : -1]) if (q >= 0 && bright[q] && !lab[q]) { lab[q] = n; st.push(q); } }
+      sizes[n] = cnt;
+    }
+    let big = 0; for (let k = 1; k <= n; k++) if (!big || sizes[k] > sizes[big]) big = k;
+    if (!big) return null;
+    const frac = sizes[big] / (gw * gh); if (frac > 0.8 || frac < 0.04) return null;
+    let fx0 = gw, fx1 = -1, fy0 = gh, fy1 = -1; for (let i = 0; i < gw * gh; i++) if (lab[i] === big) { const x = i % gw, y = (i / gw) | 0; fx0 = Math.min(fx0, x); fx1 = Math.max(fx1, x); fy0 = Math.min(fy0, y); fy1 = Math.max(fy1, y); }
+    if ((fx1 - fx0 + 1) * (fy1 - fy0 + 1) > gw * gh * 0.72) return null;   // the paper fills the photo: nothing to cut away
+    const rows = []; let x0 = gw, x1 = -1, y0 = gh, y1 = -1;
+    for (let y = 0; y < gh; y++) {
+      let a = -1, b = -1; for (let x = 0; x < gw; x++) if (lab[y * gw + x] === big) { if (a < 0) a = x; b = x; }
+      if (a >= 0 && b - a >= 2) { rows.push([a, b]); x0 = Math.min(x0, a); x1 = Math.max(x1, b); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } else rows.push(null);
+    }
+    if (y1 < 0 || (x1 - x0 + 1) < gw * 0.2) return null;
+    const cw = W / gw, ch = H / gh, pad = 1.2;
+    const px = Math.max(0, Math.floor((x0 - pad) * cw)), py = Math.max(0, Math.floor((y0 - pad) * ch));
+    const pw = Math.min(W, Math.ceil((x1 + 1 + pad) * cw)) - px, ph = Math.min(H, Math.ceil((y1 + 1 + pad) * ch)) - py;
+    // spans widened by a cell so the paper edge is not cut
+    const rows2 = rows.map((s, i) => { const a = rows[i - 1], b = rows[i + 1], all = [s, a, b].filter(Boolean); return all.length ? [Math.min(...all.map(q => q[0])) - 1, Math.max(...all.map(q => q[1])) + 1] : null; });
+    return {x: px, y: py, w: pw, h: ph, rows: rows2, cw, ch};
+  }
   // the "scanner": a large grey copy with the shadows and uneven light removed, cut into strips at blank rows
   async function prep(src) {
     let bmp;
@@ -3062,12 +3098,24 @@ async function shrinkPhoto(file) {
       try { bmp = await createImageBitmap(src, {imageOrientation: 'from-image'}); }
       catch (e) { bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(src); }); }
     }
-    const w0 = bmp.naturalWidth || bmp.width, h0 = bmp.naturalHeight || bmp.height;
+    const W0 = bmp.naturalWidth || bmp.width, H0 = bmp.naturalHeight || bmp.height;
+    const paper = findPaper(bmp, W0, H0);   // a receipt photographed on a dark surface: keep only the paper
+    const sx = paper ? paper.x : 0, sy = paper ? paper.y : 0, w0 = paper ? paper.w : W0, h0 = paper ? paper.h : H0;
     const scale = Math.min(2.4, Math.max(1, 1400 / w0), 12000 / h0);
     const w = Math.round(w0 * scale), h = Math.round(h0 * scale);
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     const g = c.getContext('2d', {willReadFrequently: true});
-    g.imageSmoothingQuality = 'high'; g.drawImage(bmp, 0, 0, w, h);
+    g.imageSmoothingQuality = 'high'; g.drawImage(bmp, sx, sy, w0, h0, 0, 0, w, h);
+    if (paper) {
+      g.fillStyle = '#fff';
+      for (let r = 0; r < paper.rows.length; r++) {
+        const sp = paper.rows[r], y0 = (r * paper.ch - sy) * scale, y1 = ((r + 1) * paper.ch - sy) * scale;
+        if (y1 < 0 || y0 > h) continue;
+        if (!sp) { g.fillRect(0, y0, w, y1 - y0 + 1); continue; }
+        g.fillRect(0, y0, Math.max(0, (sp[0] * paper.cw - sx) * scale), y1 - y0 + 1);
+        g.fillRect((sp[1] + 1) * paper.cw * scale - sx * scale, y0, w, y1 - y0 + 1);
+      }
+    }
     const d = g.getImageData(0, 0, w, h), p = d.data, N = w * h, gray = new Uint8ClampedArray(N);
     for (let i = 0, j = 0; i < p.length; i += 4, j++) gray[j] = (p[i] * 299 + p[i + 1] * 587 + p[i + 2] * 114) / 1000;
     // background light: a very blurred copy (small canvas scaled back up), then divide it out
@@ -3315,10 +3363,11 @@ async function shrinkPhoto(file) {
   const sq = s => String(s || '').replace(/["'׳״`]/g, '').replace(/[\s\-–]+/g, '').toLowerCase();
   const HEADER = /שם\s*פריט|כמות\s*סכום|תיאור\s*פריט/;
   const TOTAL = /לתשלום|סה["'׳״]?\s?כ|סהכ|total/i;
-  const SKIP = /ויזה|visa|מאסטר|master|ישראכרט|אמריקן|דיינרס|מזומן|אשראי|כרטיס|עודף|מספר קבלה|מספר קופה|קופאי|קופה|ח\.?פ|עוסק|טלפון|מע["'׳״]?מ|חסכת|נקודות|מועדון|יתרה|עסקה|אישור|תודה|סניף|כתובת|www|co\.il/i;
+  const SKIP = /חיי[בנ] ?ב|פטור|ממע|במע|מעי?ים|ביניים|בינים|ויזה|visa|מאסטר|master|ישראכרט|אמריקן|דיינרס|מזומן|אשראי|כרטיס|עודף|מספר קבלה|מספר קופה|קופאי|קופה|ח\.?פ|עוסק|טלפון|מע["'׳״]?מ|חסכת|נקודות|מועדון|יתרה|עסקה|אישור|תודה|סניף|כתובת|www|co\.il/i;
   const DEPOSIT = /מיחזור|פיקדון|פקדון|פקדון בקבוק/;
   const INFO = /מוגבל|^\s*\d+\s*ב\s*[\d.]+\s*$/;
-  const priceFirst = s => { const m = String(s || '').replace(/,/g, '.').match(/-?\d{1,4}\.\d{2}/); return m ? Number(m[0]) : null; };
+  const signed = m => { const t = String(m); return (/^-|-$/.test(t) ? -1 : 1) * Number(t.replace(/-/g, '')); };
+  const priceFirst = s => { const m = String(s || '').replace(/,/g, '.').match(/-?\d{1,4}\.\d{2}-?/); return m ? signed(m[0]) : null; };
   // every reading of one price (text pass + the box read four ways), with a digit-by-digit vote as one more candidate
   const decStr = s => { const m = String(s || '').replace(/,/g, '.').match(/\d{1,4}\.\d{2}/g); return m ? m[m.length - 1] : null; };
   const firstDec = s => { const m = String(s || '').replace(/,/g, '.').match(/\d{1,4}\.\d{2}/); return m ? m[0] : null; };
@@ -3348,7 +3397,7 @@ async function shrinkPhoto(file) {
     for (let i = n - 1; i >= 0; i--) { const j = back[i][s]; pick[i] = items[i].cands[j].c; s -= pick[i]; }
     return pick;
   }
-  const priceOf = s => { const m = String(s || '').replace(/,/g, '.').match(/-?\d{1,5}\.\d{2}(?!\d)/g); return m ? Number(m[m.length - 1]) : null; };
+  const priceOf = s => { const m = String(s || '').replace(/,/g, '.').match(/-?\d{1,5}\.\d{2}(?!\d)-?/g); return m ? signed(m[m.length - 1]) : null; };
   function cleanName(t) {
     let s = t.replace(/[₪|]/g, ' ').replace(/\s+[\d.]*\s*ק["״']?ג.*$/, '').replace(/\s+/g, ' ').trim();
     let parts = s.split(' ');
@@ -3474,7 +3523,7 @@ async function shrinkPhoto(file) {
       let [, d, m, y] = dm; y = y.length === 2 ? '20' + y : y;
       if (+m >= 1 && +m <= 12 && +d >= 1 && +d <= 31 && +y > 2015 && +y < 2100) date = y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
     }
-    let total = 0, totalRank = 0, deposits = 0;
+    let total = 0, totalRank = 0, deposits = 0, payVal = 0;
     const perPage = pages.map(p => {
       const items = [];
       let last = null, pend = null;
@@ -3482,6 +3531,9 @@ async function shrinkPhoto(file) {
         const heb = (l.t.match(/[א-ת]/g) || []).length;
         const pl = near(p.price, l); let pv = pl ? priceFirst(pl.t) : null; if (pv == null) pv = priceOf(l.t);
         const cands = () => candsFrom(decStr(l.t), pl && pl.alts);
+        if (/\d\.\d{3}(?!\d)/.test(l.t.replace(/,/g, '.')) && heb <= 3 && pv != null && pv > 0 && pv < 5000) {   // "3.296 x 37.90   124.92": weight line under the product name
+          items.push({name: pend || 'מוצר', price: r2(pv), cands: cands()}); last = items[items.length - 1]; pend = null; continue;
+        }
         if (!heb) {   // a barcode under the product
           const code = (l.t.replace(/\s/g, '').match(/^\d{6,14}$/) || [])[0];
           if (code && last && !last.code) last.code = code;
@@ -3494,11 +3546,11 @@ async function shrinkPhoto(file) {
           if (v && rank >= totalRank) { total = v; totalRank = rank; }
           last = null; continue;
         }
-        if (SKIP.test(l.t)) { last = null; continue; }
+        if (SKIP.test(l.t)) { if (/ויזה|visa|מאסטר|master|ישראכרט|אמריקן|דיינרס|כ\.?א\.?ל/i.test(l.t) && priceOf(l.t) > 0) payVal = priceOf(l.t); last = null; continue; }
         if (DEPOSIT.test(l.t)) { if (pv) deposits = r2(deposits + pv); last = null; continue; }
         if (INFO.test(l.t)) continue;
-        if (/הנחה|הנחת|מבצע|discount/i.test(l.t) && pv && items.length) {
-          const it = items[items.length - 1]; it.price = r2(Math.max(0, it.price - Math.abs(pv))); continue;
+        if ((/הנחה|הנחת|מבצע|discount/i.test(l.t) && pv || pv < 0) && items.length) {
+          const it = items[items.length - 1], dc = Math.round(Math.abs(pv) * 100); it.price = r2(Math.max(0, it.price - Math.abs(pv))); it.disc = (it.disc || 0) + dc; continue;
         }
         if (/יחיד|יח['׳]/.test(l.t) && pend) {   // "28.33 x 5 יחיד 141.65" under a product with no price of its own
           const tot = priceOf(l.t), q = (l.t.match(/(\d{1,3})\s*יחיד/) || [])[1];
@@ -3535,6 +3587,8 @@ async function shrinkPhoto(file) {
     }
     const items = perPage.flat();
     const sum = r2(items.reduce((a, x) => a + x.price, 0));
+    if (!total && items.length) { for (const p of pages) for (const l of p.text) for (const m of l.t.replace(/,/g, '.').matchAll(/\d{1,5}\.\d{2}(?!\d)/g)) if (Math.abs(Number(m[0]) - sum) < 0.006 && sum > 0) total = sum; }
+    if (!total && payVal && items.length && payVal >= sum * 0.5 && payVal <= sum * 1.6 + 5) total = payVal;
     if (!total && items.length) {   // no "לתשלום" line was readable: the amount that repeats near the end of the receipt
       const cnt = new Map();
       for (const p of pages) for (const l of p.text) for (const m of l.t.replace(/,/g, '.').matchAll(/\d{1,5}\.\d{2}(?!\d)/g)) { const v = Number(m[0]); cnt.set(v, (cnt.get(v) || 0) + 1); }
@@ -3545,7 +3599,12 @@ async function shrinkPhoto(file) {
     let fixed = 0;
     const target = Math.round((total - deposits) * 100);
     if (total && target > 0 && target <= 300000 && items.length && items.length <= 120 && Math.round(sum * 100) !== target) {
-      const pick = solve(items, target);
+      const sh = (it, cs) => cs.map(x => ({c: x.c - (it.disc || 0), v: x.v})).filter(x => x.c > 0);
+      let pick = solve(items.map(it => ({cands: sh(it, it.cands || [])})), target);
+      if (!pick) {   // a digit may be misread (7 as 1, 0 as 9): allow single-digit swaps, with a low vote
+        const wide = items.map(it => { const cs = (it.cands || []).slice(), have = new Set(cs.map(x => x.c)); for (const x of it.cands || []) for (const s2 of swaps(x.c)) if (!have.has(s2) && s2 > 0) { have.add(s2); cs.push({c: s2, v: 0.15}); } return {cands: sh(it, cs)}; });
+        if (wide.reduce((a, x) => a + x.cands.length, 0) * target <= 2.5e8) pick = solve(wide, target);
+      }
       if (pick) items.forEach((it, i) => { const v = pick[i] / 100; if (r2(it.price) !== r2(v)) { it.price = r2(v); fixed++; } });
     }
     for (const it of items) delete it.cands;
@@ -3564,7 +3623,7 @@ async function shrinkPhoto(file) {
     window.hhOcrLast = pages;
     return parse(pages, o.store);
   };
-  window.hhOcrParse = parse;
+  window.hhOcrParse = parse; window.hhFindPaper = findPaper;
   window.hhOcrMsg = e => {
     const c = e && e.code;
     if (c === 'script') return 'קורא הקבלות לא נטען בתצוגה הזו.';
