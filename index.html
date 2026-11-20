@@ -2450,11 +2450,19 @@ async function shrinkPhoto(file) {
     box.hidden = false; $('rc-body').hidden = true; $('rc-prog').hidden = false; showProg('טוען את קורא הקבלות', 0);
     box.scrollIntoView({block: 'nearest'});
     try {
-      onProg = m => { if (PHASE[m.status]) showProg(PHASE[m.status], m.status === 'recognizing text' ? m.progress : null); };
-      const [w, canvas] = await Promise.all([getWorker(), prep(file)]);
-      const res = await w.recognize(canvas);
-      window.hhRcText = res.data.text;
-      cur = parse(res.data.text);
+      let r = null;
+      if (window.hhOcrRead) {   // the scanner: cleans the photo, reads it in strips, checks the prices against the total
+        try { r = await window.hhOcrRead([file], {say: m => { const pm = String(m).match(/(\d+)%/); showProg(String(m).replace(/…?\s*\d+%/, ''), pm ? +pm[1] / 100 : null); }, store: ''}); }
+        catch (e) { if (!/^(script|wasm|gzip)/.test((e && e.code) || '')) throw e; }
+      }
+      if (r) cur = {store: r.store, date: r.date, items: r.items.map(it => ({name: it.name, price: it.price, code: it.code || '', qty: it.qty, unit: it.unit})), total: r.total || r.sum, sum: r.sum, fixed: r.fixed, failed: !r.items.length && !r.total};
+      else {
+        onProg = m => { if (PHASE[m.status]) showProg(PHASE[m.status], m.status === 'recognizing text' ? m.progress : null); };
+        const [w, canvas] = await Promise.all([getWorker(), prep(file)]);
+        const res = await w.recognize(canvas);
+        window.hhRcText = res.data.text;
+        cur = parse(res.data.text);
+      }
     } catch (e) {
       cur = {store: '', date: '', items: [], total: 0, sum: 0, failed: true};
     }
@@ -2468,6 +2476,7 @@ async function shrinkPhoto(file) {
     $('rc-found').textContent = cur.failed ? 'לא הצלחתי לקרוא את הקבלה. אפשר להוסיף את המוצרים ביד או לצלם שוב, קרוב ובאור טוב.'
       : cur.items.length ? 'נמצאו ' + cur.items.length + ' מוצרים' + (cur.items.some(x => !(x.price > 0)) ? ', לחלק מהם חסר מחיר (מסומנים בצבע).' : '.') + ' בדוק ותקן לפני השמירה.' : 'לא נמצאו מוצרים. אפשר לצלם שוב, קרוב ובאור טוב, או להוסיף ביד.';
     sumUp();
+    if (cur.fixed) $('rc-found').textContent += ' תיקנתי ' + cur.fixed + ' מחירים כדי שהסכום יסתדר. בדוק מול הקבלה.';
   }
   $('rc-add').addEventListener('click', () => { const r = rowEl({name: '', price: 0}); list.append(r); r.querySelector('input').focus(); sumUp(); });
   $('rc-total').addEventListener('input', sumUp);
@@ -2996,6 +3005,318 @@ async function shrinkPhoto(file) {
 })();
 </script>
 <script>if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) addEventListener('load', () => { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {} });</script>
+<script>
+// ---------- receipts read by the page itself: Tesseract (Hebrew + English) stored in the dashboard's own files ----------
+(function () {
+  const SRC = {
+    core: 'ocr/hh-ocr-core.js',
+    heb: 'ocr/hh-ocr-heb.js',
+    eng: 'ocr/hh-ocr-eng.js'
+  };
+  const r2 = v => Math.round(v * 100) / 100;
+  const tick = () => new Promise(r => setTimeout(r, 30));
+  const fail = (code, e) => { const x = new Error(code + (e && e.message ? ': ' + e.message : '')); x.code = code; return x; };
+  const loadScript = src => new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src; s.async = true;
+    s.onload = () => res(); s.onerror = () => { s.remove(); rej(new Error('load')); };
+    document.head.append(s);
+  });
+  async function gunzip(b64) {
+    const bin = atob(b64), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    if (typeof DecompressionStream !== 'function') throw fail('gzip');
+    return new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  }
+
+  let engP = null;
+  const engine = step => engP || (engP = (async () => {
+    step('טוען את קורא הקבלות (רק בפעם הראשונה בכל פתיחה)…');
+    if (!window.TesseractCore) { try { await loadScript(SRC.core); } catch (e) { throw fail('script', e); } }
+    if (!window.TesseractCore) throw fail('script');
+    let M;
+    try { M = await window.TesseractCore(); } catch (e) { throw fail('wasm', e); }
+    step('טוען עברית ואנגלית…');
+    window.hhTessData = window.hhTessData || {};
+    for (const lang of ['heb', 'eng']) {
+      if (!window.hhTessData[lang]) { try { await loadScript(SRC[lang]); } catch (e) { throw fail('script', e); } }
+      if (!window.hhTessData[lang]) throw fail('script');
+      M.FS.writeFile('./' + lang + '.traineddata', await gunzip(window.hhTessData[lang]));
+      delete window.hhTessData[lang];
+    }
+    const text = new M.TessBaseAPI();
+    if (text.Init(null, 'heb+eng', 1) === -1) throw fail('init');
+    text.SetPageSegMode(6); text.SetVariable('preserve_interword_spaces', '0');
+    const nums = new M.TessBaseAPI();
+    if (nums.Init(null, 'eng', 1) === -1) throw fail('init');
+    nums.SetPageSegMode(6); nums.SetVariable('tessedit_char_whitelist', '0123456789.,-x');
+    return {M, text, nums};
+  })().catch(e => { engP = null; throw e; }));
+
+  // the "scanner": a large grey copy with the shadows and uneven light removed, cut into strips at blank rows
+  async function prep(src) {
+    let bmp;
+    if (src instanceof HTMLImageElement) bmp = src;
+    else {
+      try { bmp = await createImageBitmap(src, {imageOrientation: 'from-image'}); }
+      catch (e) { bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(src); }); }
+    }
+    const w0 = bmp.naturalWidth || bmp.width, h0 = bmp.naturalHeight || bmp.height;
+    const scale = Math.min(2.4, Math.max(1, 1400 / w0), 12000 / h0);
+    const w = Math.round(w0 * scale), h = Math.round(h0 * scale);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', {willReadFrequently: true});
+    g.imageSmoothingQuality = 'high'; g.drawImage(bmp, 0, 0, w, h);
+    const d = g.getImageData(0, 0, w, h), p = d.data, N = w * h, gray = new Uint8ClampedArray(N);
+    for (let i = 0, j = 0; i < p.length; i += 4, j++) gray[j] = (p[i] * 299 + p[i + 1] * 587 + p[i + 2] * 114) / 1000;
+    // background light: a very blurred copy (small canvas scaled back up), then divide it out
+    const bw = Math.max(8, Math.round(w / 24)), bh = Math.max(8, Math.round(h / 24));
+    const s1 = document.createElement('canvas'); s1.width = bw; s1.height = bh;
+    const g1 = s1.getContext('2d', {willReadFrequently: true}); const small = g1.createImageData(bw, bh);
+    // max-filter style estimate: the paper is lighter than the ink, so use a local maximum before blurring
+    const cell = 24, sm = small.data;
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      let mx = 0; const x0 = x * cell, y0 = y * cell;
+      for (let yy = y0; yy < Math.min(h, y0 + cell); yy += 2) for (let xx = x0; xx < Math.min(w, x0 + cell); xx += 2) { const v = gray[yy * w + xx]; if (v > mx) mx = v; }
+      const k = (y * bw + x) * 4; sm[k] = sm[k + 1] = sm[k + 2] = mx || 255; sm[k + 3] = 255;
+    }
+    g1.putImageData(small, 0, 0);
+    const s2 = document.createElement('canvas'); s2.width = w; s2.height = h;
+    const g2 = s2.getContext('2d', {willReadFrequently: true}); g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high'; g2.drawImage(s1, 0, 0, w, h);
+    const bgd = g2.getImageData(0, 0, w, h).data, flat = new Uint8ClampedArray(N), hist = new Uint32Array(256);
+    for (let j = 0; j < N; j++) { const v = Math.min(255, gray[j] * 255 / Math.max(60, bgd[j * 4])); flat[j] = v; hist[v | 0]++; }
+    let lo = 0, acc = 0; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > N * 0.01) { lo = v; break; } }
+    const kk = 255 / Math.max(1, 235 - lo);
+    for (let j = 0; j < N; j++) { const y = Math.max(0, Math.min(255, (flat[j] - lo) * kk)); flat[j] = y; p[j * 4] = p[j * 4 + 1] = p[j * 4 + 2] = y; p[j * 4 + 3] = 255; }
+    g.putImageData(d, 0, 0);
+    // strips: tall receipts are read in pieces, cut where a row has almost no ink
+    const ink = new Float32Array(h);
+    for (let y = 0; y < h; y++) { let n = 0; for (let x = 0; x < w; x += 2) if (flat[y * w + x] < 110) n++; ink[y] = n; }
+    const target = Math.max(900, Math.round(w * 1.25)), cuts = [0];
+    while (h - cuts[cuts.length - 1] > target * 1.3) {
+      const from = cuts[cuts.length - 1]; let best = from + target, bv = Infinity;
+      for (let y = from + Math.round(target * 0.75); y < Math.min(h - 50, from + Math.round(target * 1.2)); y++) { const v = ink[y] + ink[y - 1] + ink[y + 1]; if (v < bv) { bv = v; best = y; } }
+      cuts.push(best);
+    }
+    cuts.push(h);
+    const strips = [];
+    for (let i = 0; i < cuts.length - 1; i++) {
+      const y0 = Math.max(0, cuts[i] - (i ? 6 : 0)), y1 = Math.min(h, cuts[i + 1] + 6);
+      const sc = document.createElement('canvas'); sc.width = w; sc.height = y1 - y0;
+      sc.getContext('2d').drawImage(c, 0, y0, w, y1 - y0, 0, 0, w, y1 - y0);
+      const png = await new Promise(r => sc.toBlob(r, 'image/png'));
+      strips.push({y0, w, h: y1 - y0, bytes: new Uint8Array(await png.arrayBuffer())});
+    }
+    return {w, h, strips};
+  }
+
+  // words of one region grouped into lines, each with its vertical position
+  function lines(tsv) {
+    const L = new Map();
+    for (const row of String(tsv || '').split('\n')) {
+      const c = row.split('\t');
+      if (c[0] !== '5' || c.length < 12) continue;
+      const word = c.slice(11).join(' ').trim(); if (!word) continue;
+      const key = c[2] + '.' + c[3] + '.' + c[4], top = +c[7], hh = +c[9];
+      const l = L.get(key) || {top, bot: top + hh, words: []};
+      l.top = Math.min(l.top, top); l.bot = Math.max(l.bot, top + hh); l.words.push(word); L.set(key, l);
+    }
+    return [...L.values()].map(l => ({y: (l.top + l.bot) / 2, h: l.bot - l.top, t: l.words.join(' ').replace(/[‎‏‪-‮]/g, '')})).sort((a, b) => a.y - b.y);
+  }
+  const near = (list, l) => {
+    let best = null, d = Infinity;
+    for (const x of list) { const dd = Math.abs(x.y - l.y); if (dd < d) { d = dd; best = x; } }
+    return best && d < Math.max(l.h, best.h) * 0.7 ? best : null;
+  };
+
+  async function readOne(E, src, step) {
+    const img = await prep(src), out = {text: [], price: [], qty: []}, n = img.strips.length; window.hhOcrStrips = img.strips;
+    let k = 0;
+    for (const s of img.strips) {
+      E.M.FS.writeFile('/input', s.bytes);
+      E.text.SetImageFile(1, 0); E.nums.SetImageFile(1, 0);
+      const off = (list, into) => { for (const l of list) into.push(Object.assign(l, {y: l.y + s.y0})); };
+      step((k * 3 + 1) / (n * 3)); await tick();
+      E.text.SetRectangle(0, 0, s.w, s.h); E.text.Recognize(null); off(lines(E.text.GetTSVText(0)), out.text);
+      step((k * 3 + 2) / (n * 3)); await tick();
+      // the price sits at the left edge of every line: read that small box again, digits only, line by line
+      const tl = lines(E.text.GetTSVText(0)); E.nums.SetPageSegMode(7);
+      for (const l of tl) {
+        const top = Math.max(0, Math.round(l.y - l.h / 2 - 5)), hh = Math.min(s.h - top, Math.round(l.h + 10));
+        if (hh < 8) continue;
+        const alts = [];
+        for (const [x0, wf] of [[0, 0.27], [0, 0.22], [0, 0.34], [Math.round(s.w * 0.04), 0.24]]) {
+          E.nums.SetRectangle(x0, top, Math.round(s.w * wf), hh); E.nums.Recognize(null);
+          alts.push(lines(E.nums.GetTSVText(0)).map(x => x.t).join(' '));
+        }
+        out.price.push({y: l.y + s.y0, h: l.h, t: alts[0], alts});
+      }
+      E.nums.SetPageSegMode(6);
+      step((k * 3 + 3) / (n * 3)); await tick();
+      E.nums.SetRectangle(Math.round(s.w * 0.27), 0, Math.round(s.w * 0.3), s.h); E.nums.Recognize(null); off(lines(E.nums.GetTSVText(0)), out.qty);
+      k++;
+    }
+    return out;
+  }
+
+  const STORES = ['חצי חינם', 'אושר עד', 'אנגוס', 'יכין סנטר', 'שופרסל', 'רמי לוי', 'יוחננוף', 'ויקטורי', 'טיב טעם', 'יינות ביתן', 'קרפור', 'מחסני השוק', 'סופר פארם', 'סופר-פארם', 'מגה', 'קשת טעמים', 'פרש מרקט', 'סופר יודה', 'זול ובגדול', 'שוק העיר', 'סטופ מרקט', 'מחסני להב', 'היפר כהן', 'קואופ', 'ברכל', 'גוד פארם', 'ניו פארם', 'AM:PM'];
+  const sq = s => String(s || '').replace(/["'׳״`]/g, '').replace(/[\s\-–]+/g, '').toLowerCase();
+  const HEADER = /שם\s*פריט|כמות\s*סכום|תיאור\s*פריט/;
+  const TOTAL = /לתשלום|סה["'׳״]?\s?כ|סהכ|total/i;
+  const SKIP = /ויזה|visa|מאסטר|master|ישראכרט|אמריקן|דיינרס|מזומן|אשראי|כרטיס|עודף|מספר קבלה|מספר קופה|קופאי|קופה|ח\.?פ|עוסק|טלפון|מע["'׳״]?מ|חסכת|נקודות|מועדון|יתרה|עסקה|אישור|תודה|סניף|כתובת|www|co\.il/i;
+  const DEPOSIT = /מיחזור|פיקדון|פקדון|פקדון בקבוק/;
+  const INFO = /מוגבל|^\s*\d+\s*ב\s*[\d.]+\s*$/;
+  const priceFirst = s => { const m = String(s || '').replace(/,/g, '.').match(/-?\d{1,4}\.\d{2}/); return m ? Number(m[0]) : null; };
+  // every reading of one price (text pass + the box read four ways), with a digit-by-digit vote as one more candidate
+  const decStr = s => { const m = String(s || '').replace(/,/g, '.').match(/\d{1,4}\.\d{2}/g); return m ? m[m.length - 1] : null; };
+  const firstDec = s => { const m = String(s || '').replace(/,/g, '.').match(/\d{1,4}\.\d{2}/); return m ? m[0] : null; };
+  function candsFrom(textStr, alts) {
+    const votes = new Map(), strs = [];
+    const add = (s, w) => { if (!s) return; const c = Math.round(Number(s) * 100); if (c > 0 && c < 500000) { votes.set(c, (votes.get(c) || 0) + w); strs.push(s); } };
+    add(textStr, 1); for (const a of alts || []) add(firstDec(a), 1);
+    const byLen = new Map(); for (const s of strs) byLen.set(s.length, (byLen.get(s.length) || []).concat(s));
+    let grp = []; for (const g of byLen.values()) if (g.length > grp.length) grp = g;
+    if (grp.length >= 3) {
+      let s = ''; for (let i = 0; i < grp[0].length; i++) { const k = new Map(); for (const g of grp) k.set(g[i], (k.get(g[i]) || 0) + 1); s += [...k.entries()].sort((a, b) => b[1] - a[1])[0][0]; }
+      const c = Math.round(Number(s) * 100); if (c > 0) votes.set(c, (votes.get(c) || 0) + 1.5);
+    }
+    return [...votes.entries()].map(([c, v]) => ({c, v}));
+  }
+  // the receipt adds up: pick one reading per product so that the sum is exactly the total (best votes wins)
+  function solve(items, targetCents) {
+    const n = items.length, T = targetCents, NEG = -1e9;
+    let cur = new Float32Array(T + 1).fill(NEG); cur[0] = 0; const back = [];
+    for (let i = 0; i < n; i++) {
+      const nxt = new Float32Array(T + 1).fill(NEG), bk = new Int16Array(T + 1).fill(-1), cs = items[i].cands;
+      for (let s = 0; s <= T; s++) { if (cur[s] === NEG) continue; for (let j = 0; j < cs.length; j++) { const t2 = s + cs[j].c; if (t2 > T) continue; const sc = cur[s] + cs[j].v; if (sc > nxt[t2]) { nxt[t2] = sc; bk[t2] = j; } } }
+      back.push(bk); cur = nxt;
+    }
+    if (cur[T] === NEG) return null;
+    const pick = new Array(n); let s = T;
+    for (let i = n - 1; i >= 0; i--) { const j = back[i][s]; pick[i] = items[i].cands[j].c; s -= pick[i]; }
+    return pick;
+  }
+  const priceOf = s => { const m = String(s || '').replace(/,/g, '.').match(/-?\d{1,5}\.\d{2}(?!\d)/g); return m ? Number(m[m.length - 1]) : null; };
+  function cleanName(t) {
+    let s = t.replace(/[₪|]/g, ' ').replace(/\s+[\d.]*\s*ק["״']?ג.*$/, '').replace(/\s+/g, ' ').trim();
+    let parts = s.split(' ');
+    while (parts.length && (!/[א-תA-Za-z]/.test(parts[parts.length - 1]) || parts[parts.length - 1].replace(/[^א-תA-Za-z]/g, '').length < 2)) parts.pop();
+    while (parts.length && !/[א-תA-Za-z]/.test(parts[0])) parts.shift();
+    return parts.join(' ').replace(/^[\s\-.:*,]+|[\s\-.:*,]+$/g, '').trim();
+  }
+
+  function parse(pages, fallbackStore) {
+    const all = pages.map(p => p.text.map(l => l.t).join('\n')).join('\n');
+    const flat = sq(all);
+    let store = '';
+    for (const s of STORES) if (flat.includes(sq(s))) { store = s.replace('סופר-פארם', 'סופר פארם'); break; }
+    if (!store && fallbackStore && fallbackStore !== 'קבלה') store = fallbackStore;
+    let date = '';
+    const dm = all.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2}|\d{2})(?!\d)/);
+    if (dm) {
+      let [, d, m, y] = dm; y = y.length === 2 ? '20' + y : y;
+      if (+m >= 1 && +m <= 12 && +d >= 1 && +d <= 31 && +y > 2015 && +y < 2100) date = y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
+    }
+    let total = 0, totalRank = 0, deposits = 0;
+    const perPage = pages.map(p => {
+      const items = [];
+      let last = null, pend = null;
+      for (const l of p.text) {
+        const heb = (l.t.match(/[א-ת]/g) || []).length;
+        const pl = near(p.price, l); let pv = pl ? priceFirst(pl.t) : null; if (pv == null) pv = priceOf(l.t);
+        const cands = () => candsFrom(decStr(l.t), pl && pl.alts);
+        if (!heb) {   // a barcode under the product
+          const code = (l.t.replace(/\s/g, '').match(/^\d{6,14}$/) || [])[0];
+          if (code && last && !last.code) last.code = code;
+          continue;
+        }
+        if (HEADER.test(l.t)) continue;
+        if (TOTAL.test(l.t)) {
+          const v = pv != null ? Math.abs(pv) : priceOf(l.t);
+          const rank = /לתשלום|total/i.test(l.t) ? 2 : 1;
+          if (v && rank >= totalRank) { total = v; totalRank = rank; }
+          last = null; continue;
+        }
+        if (SKIP.test(l.t)) { last = null; continue; }
+        if (DEPOSIT.test(l.t)) { if (pv) deposits = r2(deposits + pv); last = null; continue; }
+        if (INFO.test(l.t)) continue;
+        if (/הנחה|הנחת|מבצע|discount/i.test(l.t) && pv && items.length) {
+          const it = items[items.length - 1]; it.price = r2(Math.max(0, it.price - Math.abs(pv))); continue;
+        }
+        if (/יחיד|יח['׳]/.test(l.t) && pend) {   // "28.33 x 5 יחיד 141.65" under a product with no price of its own
+          const tot = priceOf(l.t), q = (l.t.match(/(\d{1,3})\s*יחיד/) || [])[1];
+          if (tot && tot > 0 && tot < 5000) { const it = {name: pend, price: r2(tot), cands: cands()}; if (q && +q > 1) it.qty = +q; items.push(it); last = it; }
+          pend = null; continue;
+        }
+        if (pv == null || pv <= 0 || pv > 5000) {
+          const nm = cleanName(l.t), lt = nm.replace(/[^א-תA-Za-z]/g, '').length;
+          pend = lt >= 3 && !/[=<>]/.test(nm) && lt / nm.replace(/\s/g, '').length >= 0.6 ? nm : null;
+          continue;
+        }
+        pend = null;
+        const name = cleanName(l.t);
+        const letters = name.replace(/[^א-תA-Za-z]/g, '').length;
+        if (letters < 3 || /[=<>]/.test(name) || letters / name.replace(/\s/g, '').length < 0.6 || !/[א-תA-Za-z]{3,}/.test(name)) continue;
+        if (store && sq(name) === sq(store)) continue;
+        const it = {name, price: r2(pv), cands: cands()};
+        const ql = near(p.qty, l);
+        if (ql) {
+          const q = ql.t.replace(/,/g, '.').replace(/\s/g, '');
+          const wm = q.match(/(\d{1,4}\.\d{2})x.*?(\d\.\d{3})$/);
+          if (wm) { it.unit = Number(wm[1]); it.qty = Number(wm[2]); }
+          else if (/^\d{1,3}$/.test(q) && +q > 1) it.qty = +q;
+        }
+        items.push(it); last = it;
+      }
+      return items;
+    });
+    // several photos of one long receipt overlap by a line or two: drop the repeated edge lines
+    const same = (a, b) => a && b && a.price === b.price && sq(a.name) === sq(b.name) && (a.code || '') === (b.code || '');
+    for (let i = 0; i < perPage.length; i++) for (let j = 0; j < perPage.length; j++) {
+      if (i === j || !perPage[i].length || !perPage[j].length) continue;
+      if (same(perPage[i][perPage[i].length - 1], perPage[j][0])) perPage[j].shift();
+    }
+    const items = perPage.flat();
+    const sum = r2(items.reduce((a, x) => a + x.price, 0));
+    if (!total && items.length) {   // no "לתשלום" line was readable: the amount that repeats near the end of the receipt
+      const cnt = new Map();
+      for (const p of pages) for (const l of p.text) for (const m of l.t.replace(/,/g, '.').matchAll(/\d{1,5}\.\d{2}(?!\d)/g)) { const v = Number(m[0]); cnt.set(v, (cnt.get(v) || 0) + 1); }
+      let best = 0, bc = 1;
+      for (const [v, c] of cnt) if (c >= 2 && v >= sum * 0.5 && v <= sum * 1.6 + 5 && (c > bc || (c === bc && v > best))) { best = v; bc = c; }
+      if (best) total = best;
+    }
+    let fixed = 0;
+    const target = Math.round((total - deposits) * 100);
+    if (total && target > 0 && target <= 300000 && items.length && items.length <= 120 && Math.round(sum * 100) !== target) {
+      const pick = solve(items, target);
+      if (pick) items.forEach((it, i) => { const v = pick[i] / 100; if (r2(it.price) !== r2(v)) { it.price = r2(v); fixed++; } });
+    }
+    for (const it of items) delete it.cands;
+    const sum2 = r2(items.reduce((a, x) => a + x.price, 0));
+    return {store, date, items, total, sum: sum2, deposits, fixed};
+  }
+
+  window.hhOcrRead = async function (sources, opts) {
+    const o = opts || {}, say = o.say || (() => {});
+    const E = await engine(say); window.hhOcrEngine = E;
+    const pages = [];
+    for (let i = 0; i < sources.length; i++) {
+      const lbl = sources.length > 1 ? 'קורא תמונה ' + (i + 1) + ' מתוך ' + sources.length : 'קורא את הקבלה';
+      pages.push(await readOne(E, sources[i], f => say(lbl + '… ' + Math.round((i + f) / sources.length * 100) + '%')));
+    }
+    window.hhOcrLast = pages;
+    return parse(pages, o.store);
+  };
+  window.hhOcrParse = parse;
+  window.hhOcrMsg = e => {
+    const c = e && e.code;
+    if (c === 'script') return 'קורא הקבלות לא נטען בתצוגה הזו.';
+    if (c === 'wasm') return 'התצוגה הזו לא מאפשרת להפעיל את קורא הקבלות.';
+    if (c === 'gzip') return 'הדפדפן הזה ישן מדי בשביל קורא הקבלות.';
+    return 'לא הצלחתי לקרוא את הקבלה.';
+  };
+})();
+
+</script>
 
 
 </body>
