@@ -63,7 +63,7 @@
 .sc-fields .sc-wide { grid-column: 1 / -1; }
 .sc-fields .hh-sel { width: 100%; }
 .sc-stick { position: sticky; top: 0; z-index: 3; background: var(--bg); margin: 0 -16px; padding: 6px 16px 10px; display: flex; flex-direction: column; gap: 4px; }
-.sc-shot { position: relative; height: 30vh; overflow: auto; border-radius: 18px; background: var(--field); box-shadow: var(--shadow); }
+.sc-shot { position: relative; height: 26vh; overflow: auto; border-radius: 18px; background: var(--field); box-shadow: var(--shadow); }
 .sc-shot[hidden] { display: none; }
 .sc-shot img { display: block; width: 100%; height: auto; }
 .sc-mark { position: absolute; inset-inline: 0; background: rgba(255,90,71,.16); border-block: 2px solid var(--coral); pointer-events: none; }
@@ -93,6 +93,56 @@
 .sc-err { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--bad-soft); color: var(--bad); font-size: 14px; }
 .sc-err[hidden] { display: none; }
 @media (max-width: 360px) { .sc-fields { grid-template-columns: 1fr; } .sc-row { grid-template-columns: minmax(0, 1fr) 84px 36px; } }
+
+/* the three stages of a scan: rows found, text read and checked, products table */
+.sc-steps { list-style: none; margin: 0; padding: 14px 16px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
+.sc-steps li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; color: var(--muted); }
+.sc-steps li > i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font: 600 13px var(--font-num); font-style: normal; box-sizing: border-box; }
+.sc-steps li b { display: block; font-size: 15px; font-weight: 600; }
+.sc-steps li span { display: block; font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sc-steps li.on, .sc-steps li.done { color: var(--ink); }
+.sc-steps li.on > i { border-color: var(--coral); color: var(--coral); }
+.sc-steps li.done > i { border-color: var(--good); background: var(--good); color: var(--card); }
+
+/* what the check found */
+.sc-checks { background: var(--card); border-radius: 20px; padding: 14px 16px; box-shadow: var(--shadow); }
+.sc-checks h3 { margin: 0 0 10px; font-size: 15px; }
+.sc-checks ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.sc-checks li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.45; }
+.sc-checks li svg { margin-top: 2px; }
+.sc-checks li.ok svg { color: var(--good); }
+.sc-checks li.warn svg { color: var(--coral); }
+.sc-err .sc-link { display: flex; margin-top: 6px; color: var(--bad); text-decoration: underline; }
+
+/* the products table */
+.sc-tabs { margin-top: 2px; }
+.sc-thead { display: grid; grid-template-columns: minmax(0, 1fr) 92px 40px; gap: 6px; padding-inline-start: 11px; font-size: 12.5px; color: var(--muted); }
+.sc-sub { display: grid; grid-template-columns: auto minmax(0, 1fr) 92px 40px; gap: 6px; align-items: center; padding-inline-start: 11px; }
+.sc-tag { font-size: 12px; font-weight: 600; color: var(--good); background: var(--good-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.sc-pt { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-sub input { min-width: 0; width: 100%; box-sizing: border-box; font: 15px var(--font-num); font-variant-numeric: tabular-nums; text-align: left; color: var(--good); background: var(--field); border: 1.5px solid transparent; border-radius: 12px; padding: 8px 10px; }
+.sc-sub input:focus { border-color: var(--coral); outline: none; }
+.sc-sub button { width: 40px; height: 36px; border: 0; border-radius: 12px; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.sc-line.sc-disc b { color: var(--good); }
+
+/* every line that was read, in order */
+.sc-text { background: var(--card); border-radius: 20px; padding: 8px 6px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.sc-pg { font-size: 13px; font-weight: 600; color: var(--muted); padding: 10px 10px 4px; }
+.sc-tl { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 4px 8px; align-items: center; padding: 6px 8px; border-radius: 10px; }
+.sc-tl.dim { opacity: .62; }
+.sc-tl.loose { background: var(--t-yellow); }
+.sc-k { font-size: 11.5px; line-height: 1.3; border-radius: 999px; padding: 3px 6px; text-align: center; background: var(--field); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-tl.k-product .sc-k { color: var(--ink); font-weight: 600; }
+.sc-tl.k-promo .sc-k { color: var(--good); background: var(--good-soft); font-weight: 600; }
+.sc-tl.k-total .sc-k, .sc-tl.k-total1 .sc-k { color: var(--ink); font-weight: 700; }
+.sc-tt { min-height: 32px; background: none; border: 0; padding: 4px 2px; color: var(--ink); font: inherit; font-size: 14px; text-align: start; overflow-wrap: anywhere; cursor: pointer; border-radius: 8px; }
+.sc-tt:focus-visible { outline: 2px solid var(--coral); }
+.sc-add { grid-column: 2; justify-self: start; min-height: 36px; }
+.sc-tnote { margin: 8px 10px 4px; font-size: 13px; color: var(--muted); }
+.sc-fold summary { padding: 9px 10px; font-size: 13.5px; color: var(--muted); cursor: pointer; border-radius: 10px; }
+.sc-fold summary:focus-visible { outline: 2px solid var(--coral); }
+.sc-fold[open] summary { color: var(--ink); }
+.sc-note.warn { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -624,7 +674,7 @@ button.hh-cred { font: inherit; color: inherit; background: none; border: 0; bor
       <button type="button" class="hh-photo" id="photo-cam"><span data-icon="camera" data-size="18"></span><span>צילום קבלה</span></button>
       <button type="button" class="hh-photo hh-photo-alt" id="photo-gal"><span data-icon="image" data-size="18"></span><span>מהגלריה</span></button>
       <input type="file" accept="image/*" capture="environment" id="f-cam" class="hh-vh" tabindex="-1" aria-label="צילום קבלה">
-      <input type="file" accept="image/*" multiple id="f-photo" class="hh-vh" tabindex="-1" aria-label="קבלה מהגלריה">
+      <input type="file" accept="image/*" multiple id="f-photo" class="hh-vh"" tabindex="-1" aria-label="קבלה מהגלריה">
       <div class="hh-photo-prev" data-draw="photoprev"></div>
     </div>
     <div class="hh-rc" id="rc" hidden>
@@ -1598,6 +1648,7 @@ async function shrinkPhoto(file) {
   } finally { URL.revokeObjectURL(url); }
 }
 
+window.hhHelpers = {fmts, todayISO, allCats, guessCat, shrinkPhoto, dbPhotoUrl: typeof dbPhotoUrl === 'function' ? dbPhotoUrl : null};   // shared with the scanner, which runs in its own scope
 // ---------- tabs ----------
 (function () {
   const tabs = [...document.querySelectorAll('.hh-tabs [data-tab]')];
@@ -1627,7 +1678,7 @@ async function shrinkPhoto(file) {
   const onPick = async (ev) => {
     const f = ev.target.files && ev.target.files[0];
     if (!f) return;
-    if (window.hhScanner) { const files = [...ev.target.files]; ev.target.value = ''; window.hhScanner.open({files}); return; }
+    if (window.hhScanner) { const files = [...ev.target.files], cam = ev.target.hasAttribute('capture'); ev.target.value = ''; window.hhScanner.open({files, camera: cam}); return; }
     try {
       window.hhPhoto = await shrinkPhoto(f);
       if (laterBtn) laterBtn.hidden = false;
@@ -3176,6 +3227,52 @@ async function shrinkPhoto(file) {
     return {x: px, y: py, w: pw, h: ph, rows: rows2, cw, ch};
   }
   // the "scanner": a large grey copy with the shadows and uneven light removed, cut into strips at blank rows
+  // ---------- system 3: the line finder. Every row of print on the receipt becomes one line, read on its own ----------
+  // the angle at which the rows of ink line up best: a receipt is rarely photographed straight
+  function skewOf(flat, w, y0, y1) {
+    const xs = [], ys = [];
+    for (let y = y0; y < y1; y += 2) for (let x = 0; x < w; x += 2) if (flat[y * w + x] < 110) { xs.push(x - w / 2); ys.push(y - y0); }
+    if (xs.length < 300) return 0;
+    const PAD = Math.ceil(w / 2 * 0.11 / 2) + 2, hist = new Float32Array(Math.ceil((y1 - y0) / 2) + 2 * PAD + 2);
+    const score = th => {
+      const t = Math.tan(th * Math.PI / 180); hist.fill(0);
+      for (let i = 0; i < xs.length; i++) { const k = Math.round((ys[i] - xs[i] * t) / 2) + PAD; if (k >= 0 && k < hist.length) hist[k]++; }
+      let s = 0; for (let k = 1; k < hist.length; k++) { const d = hist[k] - hist[k - 1]; s += d * d; } return s;
+    };
+    const s0 = score(0); let best = 0, bs = s0;
+    for (let th = -6; th <= 6.001; th += 0.5) { const s = score(th); if (s > bs) { bs = s; best = th; } }
+    const c = best; for (let th = c - 0.4; th <= c + 0.401; th += 0.1) { const s = score(th); if (s > bs) { bs = s; best = th; } }
+    return Math.abs(best) >= 0.3 && bs > s0 * 1.05 ? Math.round(best * 10) / 10 : 0;
+  }
+  // rows of print: an ink profile down the strip, cut where the paper shows between two rows
+  function bandsOf(d, w, h, xa, xb) {
+    const prof = new Float32Array(h), x0 = xa || 0, x1 = xb || w;
+    for (let y = 0; y < h; y++) { let n = 0; for (let x = x0, o = (y * w + x0) * 4; x < x1; x += 2, o += 8) if (d[o] < 120) n++; prof[y] = n; }
+    const sm = new Float32Array(h);
+    for (let y = 0; y < h; y++) sm[y] = ((y ? prof[y - 1] : 0) + 2 * prof[y] + (y < h - 1 ? prof[y + 1] : 0)) / 4;
+    const nz = []; for (let y = 0; y < h; y++) if (sm[y] > 0.5) nz.push(sm[y]);
+    if (nz.length < 6) return [];
+    nz.sort((a, b) => a - b);
+    const th = Math.max(1.5, nz[Math.floor(nz.length * 0.9)] * 0.05), raw = [];
+    for (let y = 0; y < h;) { if (sm[y] > th) { const a = y; while (y < h && sm[y] > th) y++; raw.push([a, y]); } else y++; }
+    const hs = raw.map(b => b[1] - b[0]).filter(x => x >= 8).sort((a, b) => a - b), mh = hs.length ? hs[hs.length >> 1] : 24;
+    const joined = [];
+    for (const b of raw) { const p = joined[joined.length - 1]; if (p && b[0] - p[1] <= Math.max(2, mh * 0.12) && b[1] - p[0] <= mh * 1.4) p[1] = b[1]; else joined.push(b.slice()); }
+    const out = [];
+    const split = (a, b, depth) => {
+      if (depth < 4 && b - a > mh * 1.6) {
+        let best = -1, bv = Infinity, mean = 0;
+        for (let y = a; y < b; y++) mean += sm[y];
+        mean /= b - a;
+        for (let y = a + Math.round(mh * 0.5); y < b - Math.round(mh * 0.5); y++) if (sm[y] < bv) { bv = sm[y]; best = y; }
+        if (best > 0 && bv < mean * 0.5) { split(a, best, depth + 1); split(best + 1, b, depth + 1); return; }
+      }
+      out.push([a, b]);
+    };
+    for (const [a, b] of joined) split(a, b, 0);
+    return out.filter(([a, b]) => { if (b - a < Math.max(5, mh * 0.35)) return false; let ink = 0; for (let y = a; y < b; y++) ink += prof[y]; return ink >= 8; });
+  }
+
   async function prep(src) {
     let bmp;
     if (src instanceof HTMLImageElement) bmp = src;
@@ -3233,13 +3330,20 @@ async function shrinkPhoto(file) {
       cuts.push(best);
     }
     cuts.push(h);
+    // each strip is straightened by its own angle (a long receipt bends), with a margin so no row is cut at the edges
     const strips = [];
     for (let i = 0; i < cuts.length - 1; i++) {
-      const y0 = Math.max(0, cuts[i] - (i ? 6 : 0)), y1 = Math.min(h, cuts[i + 1] + 6);
-      const sc = document.createElement('canvas'); sc.width = w; sc.height = y1 - y0;
-      sc.getContext('2d').drawImage(c, 0, y0, w, y1 - y0, 0, 0, w, y1 - y0);
+      const c0 = cuts[i], c1 = cuts[i + 1], ang = window.hhOcrSkew ? skewOf(flat, w, c0, c1) : 0;   // straightening is off: Tesseract reads a slight slant better than a resampled strip
+      const pad = Math.ceil(w / 2 * Math.abs(Math.tan(ang * Math.PI / 180))) + 24;
+      const y0 = Math.max(0, c0 - pad), y1 = Math.min(h, c1 + pad), sh = y1 - y0;
+      const sc = document.createElement('canvas'); sc.width = w; sc.height = sh;
+      const sg = sc.getContext('2d', {willReadFrequently: true});
+      sg.fillStyle = '#fff'; sg.fillRect(0, 0, w, sh);
+      if (ang) { sg.translate(w / 2, sh / 2); sg.rotate(-ang * Math.PI / 180); sg.drawImage(c, 0, y0, w, sh, -w / 2, -sh / 2, w, sh); sg.setTransform(1, 0, 0, 1, 0, 0); }
+      else sg.drawImage(c, 0, y0, w, sh, 0, 0, w, sh);
+      const lb = bandsOf(sg.getImageData(0, 0, w, sh).data, w, sh, 0, Math.round(w * 0.32));
       const png = await new Promise(r => sc.toBlob(r, 'image/png'));
-      strips.push({y0, w, h: y1 - y0, bytes: new Uint8Array(await png.arrayBuffer())});
+      strips.push({y0, w, h: sh, core: [c0 - y0, c1 - y0], ang, lb, canvas: sc, bytes: new Uint8Array(await png.arrayBuffer())});
     }
     return {w, h, strips, canvas: c, fy: y => Math.max(0, Math.min(1, (sy + y / scale) / H0))};
   }
@@ -3268,7 +3372,7 @@ async function shrinkPhoto(file) {
     const out = [];
     for (const row of String(tsv || '').split('\n')) {
       const q = row.split('\t'); if (q[0] !== '5' || q.length < 12) continue;
-      const t = q.slice(11).join(' ').replace(/[‎‏‪-‮]/g, '').trim(); if (t) out.push({x: +q[6], y: +q[7], w: +q[8], h: +q[9], t, key: q[2] + '.' + q[3] + '.' + q[4]});
+      const t = q.slice(11).join(' ').replace(/[‎‏‪-‮]/g, '').trim(); if (t) out.push({x: +q[6], y: +q[7], w: +q[8], h: +q[9], t, c: +q[10], key: q[2] + '.' + q[3] + '.' + q[4]});
     }
     return out;
   };
@@ -3278,7 +3382,7 @@ async function shrinkPhoto(file) {
     const png = await new Promise(res => c.toBlob(res, 'image/png'));
     E.M.FS.writeFile('/input', new Uint8Array(await png.arrayBuffer()));
     api.SetPageSegMode(psm); api.SetImageFile(1, 0); api.SetRectangle(0, 0, c.width, c.height); api.Recognize(null);
-    return wordsOf(api.GetTSVText(0)).map(w => ({x: r.x + w.x / sc, y: r.y + w.y / sc, w: w.w / sc, h: w.h / sc, t: w.t, key: w.key}));
+    return wordsOf(api.GetTSVText(0)).map(w => ({x: r.x + w.x / sc, y: r.y + w.y / sc, w: w.w / sc, h: w.h / sc, t: w.t, c: w.c, key: w.key}));
   }
   const DEC = /^-?\d{1,4}\.\d{2}$/;
   const median = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
@@ -3299,7 +3403,7 @@ async function shrinkPhoto(file) {
     if (d.length >= 3 && d.length <= 6) return {c: Number(d.slice(0, -2)) * 100 + Number(d.slice(-2)), neg};
     return null;
   }
-  const CONF = {0: '986', 9: '0', 8: '03', 3: '8', 6: '50', 5: '6', 1: '7', 7: '1'};
+  const CONF = {0: '986', 9: '0', 8: '036', 3: '8', 6: '580', 5: '6', 1: '7', 7: '1'};
   function swaps(c) {
     const s = String(c), out = new Set();
     for (let i = 0; i < s.length; i++) for (const r of CONF[s[i]] || '') { const t = s.slice(0, i) + r + s.slice(i + 1); if (t[0] !== '0' || t.length === 1) out.add(Number(t)); }
@@ -3413,50 +3517,112 @@ async function shrinkPhoto(file) {
     return {rows, names, text, totals: [...tot.entries()].map(([c, v]) => ({c, v})), pitch};
   }
 
-  async function readOne(E, src, step) {
-    const img = await prep(src), out = {text: [], price: [], qty: [], fy: img.fy}, n = img.strips.length; window.hhOcrStrips = img.strips; window.hhOcrCanvas = img.canvas;
-    { const tb = await readTable(E, img.canvas, step); if (tb) { out.table = tb; out.text = tb.text; return out; } }
-    let k = 0;
+  // Tesseract's own lines, with the pieces of one row that it read as separate blocks (the price apart from the name) joined
+  function rowsOf(words) {
+    const G = new Map();
+    for (const w of words) {
+      const g = G.get(w.key) || {top: w.y, bot: w.y + w.h, x0: w.x, x1: w.x + w.w, words: []};
+      g.top = Math.min(g.top, w.y); g.bot = Math.max(g.bot, w.y + w.h); g.x0 = Math.min(g.x0, w.x); g.x1 = Math.max(g.x1, w.x + w.w); g.words.push(w); G.set(w.key, g);
+    }
+    const R = [...G.values()].sort((a, b) => (a.top + a.bot) - (b.top + b.bot));
+    for (let i = 0; i < R.length; i++) for (let j = i + 1; j < Math.min(R.length, i + 6); j++) {
+      const a = R[i], b = R[j]; if (!a || !b) continue;
+      const ov = Math.min(a.bot, b.bot) - Math.max(a.top, b.top), hmin = Math.min(a.bot - a.top, b.bot - b.top);
+      if (ov >= hmin * 0.6 && (a.x1 <= b.x0 + 4 || b.x1 <= a.x0 + 4)) { a.top = Math.min(a.top, b.top); a.bot = Math.max(a.bot, b.bot); a.x0 = Math.min(a.x0, b.x0); a.x1 = Math.max(a.x1, b.x1); a.words.push(...b.words); R[j] = null; }
+    }
+    return R.filter(Boolean).map(g => ({sa: g.top, sb: g.bot, ...textOf(g.words)}));
+  }
+  // the words of one row, right to left as the receipt is read (runs of English words left to right)
+  function textOf(ws) {
+    ws = ws.slice().sort((p, q) => (q.x + q.w) - (p.x + p.w));
+    const toks = ws.map(w => w.t);
+    for (let i = 0; i < toks.length; i++) {
+      let j = i; while (j < toks.length && /[A-Za-z]/.test(toks[j]) && !/[א-ת]/.test(toks[j])) j++;
+      if (j - i > 1) { const r = toks.slice(i, j).reverse(); toks.splice(i, j - i, ...r); }
+      i = Math.max(i, j - 1);
+    }
+    const len = ws.reduce((a, w) => a + w.t.length, 0);
+    return {t: toks.join(' ').replace(/[‎‏‪-‮]/g, '').replace(/\s+/g, ' ').trim(), conf: len ? ws.reduce((a, w) => a + (w.c > 0 ? w.c : 0) * w.t.length, 0) / len : 0};
+  }
+  // one photo. System 3: find every row (Tesseract's rows, plus any price at the left edge that no row covers),
+  // then read every row again on its own: its price box four ways, and its name larger when it read badly
+  async function readOne(E, src, step, found) {
+    const img = await prep(src), out = {lines: [], text: [], fy: img.fy, w: img.w};
+    window.hhOcrStrips = img.strips; window.hhOcrCanvas = img.canvas;
+    { const tb = await readTable(E, img.canvas, step); if (tb) { out.table = tb; out.text = tb.text; if (found) found(tb.rows.length); return out; } }
+    const own = (s, a, b) => { const cy = (a + b) / 2; return cy >= s.core[0] && cy < s.core[1]; };
+    const per = []; let total = 0, k = 0;
     for (const s of img.strips) {
-      E.M.FS.writeFile('/input', s.bytes);
-      E.text.SetImageFile(1, 0); E.nums.SetImageFile(1, 0);
-      const off = (list, into) => { for (const l of list) into.push(Object.assign(l, {y: l.y + s.y0})); };
-      step((k * 3 + 1) / (n * 3)); await tick();
-      E.text.SetRectangle(0, 0, s.w, s.h); E.text.Recognize(null); off(lines(E.text.GetTSVText(0)), out.text);
-      step((k * 3 + 2) / (n * 3)); await tick();
-      // the price sits at the left edge of every line: read that small box again, digits only, line by line
-      const tl = lines(E.text.GetTSVText(0)); E.nums.SetPageSegMode(7);
-      for (const l of tl) {
-        const top = Math.max(0, Math.round(l.y - l.h / 2 - 5)), hh = Math.min(s.h - top, Math.round(l.h + 10));
-        if (hh < 8) continue;
-        const alts = [];
-        for (const [x0, wf] of [[0, 0.27], [0, 0.22], [0, 0.34], [Math.round(s.w * 0.04), 0.24]]) {
+      E.M.FS.writeFile('/input', s.bytes); E.text.SetImageFile(1, 0);
+      E.text.SetPageSegMode(6); E.text.SetRectangle(0, 0, s.w, s.h); E.text.Recognize(null);
+      const rows = rowsOf(wordsOf(E.text.GetTSVText(0))).filter(r => own(s, r.sa, r.sb));
+      // a price at the left edge with no row of text around it: a row Tesseract skipped
+      for (const [a, b] of s.lb || []) {
+        if (!own(s, a, b)) continue;
+        const bh = b - a, cy = (a + b) / 2;
+        if (!rows.some(r => cy >= r.sa - bh * 0.5 && cy <= r.sb + bh * 0.5)) rows.push({sa: a, sb: b, t: '', conf: 0, missed: true});
+      }
+      rows.sort((p, q) => p.sa - q.sa);
+      per.push({s, rows}); total += rows.length;
+      k++; step(0.3 * k / img.strips.length, 0, 0); await tick();
+    }
+    if (found) found(total);
+    let done = 0, rescues = 0, renames = 0;
+    for (const {s, rows: L} of per) {
+      E.M.FS.writeFile('/input', s.bytes); E.nums.SetImageFile(1, 0);
+      E.nums.SetPageSegMode(7);
+      for (const l of L) {
+        const top = Math.max(0, Math.round(l.sa - 5)), hh = Math.min(s.h - top, Math.round(l.sb - l.sa + 10));
+        l.alts = [];
+        if (hh >= 8) for (const [x0, wf] of [[0, 0.27], [0, 0.22], [0, 0.34], [Math.round(s.w * 0.04), 0.24]]) {
           E.nums.SetRectangle(x0, top, Math.round(s.w * wf), hh); E.nums.Recognize(null);
-          alts.push(lines(E.nums.GetTSVText(0)).map(x => x.t).join(' '));
+          l.alts.push(lines(E.nums.GetTSVText(0)).map(x => x.t).join(' '));
         }
-        out.price.push({y: l.y + s.y0, h: l.h, t: alts[0], alts});
+        done++;
+        if (done % 3 === 0) { step(0.3 + 0.6 * done / total, done, total); await tick(); }
       }
-      E.nums.SetPageSegMode(6);
-      step((k * 3 + 3) / (n * 3)); await tick();
-      E.nums.SetRectangle(Math.round(s.w * 0.27), 0, Math.round(s.w * 0.3), s.h); E.nums.Recognize(null); off(lines(E.nums.GetTSVText(0)), out.qty);
-      k++;
-    }
-    // names that did not read: the line again, twice as large, without the price box at the left
-    let redo = 0;
-    for (const l of out.text) {
-      if (redo >= 30) break;
-      const hebN = (l.t.match(/[א-ת]/g) || []).length, latN = (l.t.match(/[A-Za-z]/g) || []).length;
-      if (!/\d[.,]\d{2}/.test(l.t) || /\d[.,]\d{3}(?!\d)/.test(l.t) || (hebN >= 3 && latN <= hebN / 2)) continue;   // weight lines keep their text
-      const top = Math.max(0, Math.round(l.y - l.h / 2 - 6)), hh = Math.min(img.h - top, Math.round(l.h + 12)), x0 = Math.round(img.w * 0.2);
-      if (hh < 10) continue;
-      redo++;
-      const ws = await cropRead(E, E.text, img.canvas, {x: x0, y: top, w: img.w - x0, h: hh}, 2, 7);
-      const heb = ws.map(w => w.t).filter(t => /[א-ת]{2,}/.test(t) && !/\d/.test(t));
-      if (heb.join('').replace(/[^א-ת]/g, '').length >= Math.max(3, hebN + 1)) {
-        const keep = l.t.split(/\s+/).filter(t => /^[-\d.,]+-?$/.test(t));
-        l.t = keep.join(' ') + ' ' + heb.join(' ');
+      // the quantity column of app receipts ("2" between the name and the price)
+      E.nums.SetPageSegMode(6); E.nums.SetRectangle(Math.round(s.w * 0.27), 0, Math.round(s.w * 0.3), s.h); E.nums.Recognize(null);
+      for (const q of lines(E.nums.GetTSVText(0))) {
+        let best = null, bd = Infinity;
+        for (const l of L) { const d = Math.abs(q.y - (l.sa + l.sb) / 2); if (d < bd) { bd = d; best = l; } }
+        if (best && bd < Math.max(8, (best.sb - best.sa) * 0.7)) best.qty = q.t;
+      }
+      // skipped rows, and rows that read as scraps, are read again on their own at twice the size
+      for (const l of L) {
+        const sig = (l.t.match(/[א-תA-Za-z0-9]/g) || []).length;
+        if (!l.missed && ((sig >= 4 && l.conf >= 40) || rescues >= 24)) continue;
+        const top = Math.max(0, Math.round(l.sa - 6)), hh = Math.min(s.h - top, Math.round(l.sb - l.sa + 12));
+        if (hh < 10) continue;
+        rescues++;
+        const r = textOf(await cropRead(E, E.text, s.canvas, {x: 0, y: top, w: s.w, h: hh}, 2, 7));
+        if (/[א-ת]{2,}|\d[.,]\d{2}/.test(r.t) && (r.conf > l.conf + 5 || sig < 4)) { l.t = r.t; l.conf = r.conf; l.rescued = true; }
+      }
+      // product names that did not read: the row again, twice as large, without the price box at the left
+      for (const l of L) {
+        if (renames >= 24) break;
+        const hebN = (l.t.match(/[א-ת]/g) || []).length, latN = (l.t.match(/[A-Za-z]/g) || []).length;
+        if (!/\d[.,]\d{2}/.test(l.t) || /\d[.,]\d{3}(?!\d)/.test(l.t) || (hebN >= 3 && latN <= hebN / 2 && l.conf >= 60)) continue;
+        const top = Math.max(0, Math.round(l.sa - 6)), hh = Math.min(s.h - top, Math.round(l.sb - l.sa + 12)), x0 = Math.round(s.w * 0.2);
+        if (hh < 10) continue;
+        renames++;
+        const ws = (await cropRead(E, E.text, s.canvas, {x: x0, y: top, w: s.w - x0, h: hh}, 2, 7)).sort((p, q) => (q.x + q.w) - (p.x + p.w));
+        const c2 = textOf(ws).conf;
+        while (ws.length && !/[א-ת]{2,}/.test(ws[0].t)) ws.shift();
+        while (ws.length && !/[א-ת]{2,}/.test(ws[ws.length - 1].t)) ws.pop();
+        const hebC = ws.map(w => w.t).join('').replace(/[^א-ת]/g, '').length;
+        if (hebC >= Math.max(3, hebN + 1) || (hebC >= Math.max(3, hebN - 1) && c2 > l.conf + 10)) {
+          const keep = l.t.split(/\s+/).filter(t => /^[-\d.,]+-?$/.test(t));
+          l.t = (ws.map(w => w.t).join(' ') + ' ' + keep.join(' ')).trim(); l.conf = Math.max(l.conf, c2); l.renamed = true;
+        }
+      }
+      for (const l of L) {
+        if (!l.t && l.alts.some(a => /\d[.,]\d{2}/.test(a))) l.t = l.alts[0];   // a price with no words is still a row
+        if (l.t) out.lines.push({y: s.y0 + (l.sa + l.sb) / 2, h: l.sb - l.sa, t: l.t, conf: Math.round(l.conf), alts: l.alts, qty: l.qty || '', rescued: !!l.rescued, missed: !!l.missed});
       }
     }
+    out.text = out.lines;
+    step(1, total, total);
     return out;
   }
 
@@ -3623,173 +3789,542 @@ async function shrinkPhoto(file) {
     if (partial && remainder > 0) items.push({name: 'שאר המוצרים (לא נקראו בבירור)', price: r2(remainder / 100)});
     else partial = 0;
     const sum = r2(items.reduce((a, x) => a + x.price, 0));
-    return {store, date, items, total: total ? r2(total / 100) : 0, sum, deposits, fixed, partial, table: true};
+    const lines = []; for (const g of groups) for (const x of g.rows) { const v = signed(x); lines.push({t: ((x.raw || '').trim() + (v ? ' ' + (v / 100).toFixed(2) : '')).trim(), kind: x.kind === 'promo' ? 'promo' : x.kind === 'deposit' ? 'deposit' : x.unknown ? 'other' : 'product', page: x.at ? x.at[0] : 0, at: x.at, used: g.conf ? 0 : -1, amt: v ? v / 100 : null}); }
+    const checks = [{key: 'lines', ok: true, text: 'נקראו ' + lines.length + ' שורות מטבלת החשבונית' + (tp.length > 1 ? ', מ־' + tp.length + ' עמודים' : '') + '.'}, {key: 'count', ok: true, text: 'נמצאו ' + items.length + ' מוצרים.'}];
+    if (deposits) checks.push({key: 'deposits', ok: true, text: 'פיקדון על בקבוקים: ₪' + (+deposits).toFixed(2) + '.'});
+    if (partial) checks.push({key: 'partial', ok: false, text: 'עמוד אחד צולם בעיקום והשורות שלו לא נקראו בבירור. הסכום שלו נכנס כשורה אחת.'});
+    if (fixed) checks.push({key: 'fixed', ok: false, text: (fixed === 1 ? 'מחיר אחד תוקן' : fixed + ' מחירים תוקנו') + ' כדי שהסכום יסתדר. הם מסומנים בצהוב.'});
+    checks.push({key: 'sum', ok: !!total, text: ''});
+    return {store, date, items, total: total ? r2(total / 100) : 0, sum, deposits, fixed, partial, table: true, lines, checks};
   }
 
-  function parse(pages, fallbackStore) {
-    if (pages.some(p => p.table)) return parseTable(pages, fallbackStore);
-    const all = pages.map(p => p.text.map(l => l.t).join('\n')).join('\n');
-    const flat = sq(all);
-    let store = storeByIds(all);
-    if (!store) for (const s of STORES) if (flat.includes(sq(s))) { store = s.replace('סופר-פארם', 'סופר פארם'); break; }
+  // ---------- system 1: every line of the receipt read, sorted by what it is, and the arithmetic checked ----------
+  const LABEL = {product: 'מוצר', detail: 'משקל או כמות', promo: 'מבצע', deposit: 'פיקדון', info: 'הערה', total: 'לתשלום', total1: 'סה"כ', subtotal: 'סכום ביניים', count: 'מספר פריטים', savings: 'חיסכון', payment: 'תשלום', tax: 'מע"מ', header: 'ראש הקבלה', footer: 'סוף הקבלה', name: 'שם בלי מחיר', code: 'ברקוד', other: 'לא זוהתה'};
+  const TOTALRE = /ל\s?[תחהו]?\s?ש\s?ל\s?[א-ת]?\s?[םסמ](?![א-ת])|לתשלו|total|(^|[^א-ת])\d?ו?ל\s?ר\s?[םס]\s*:/i;   // the last: "לתשלום:" read as "2ל רם:"
+  const SUBRE = /ביני|בינים/;
+  const COUNTRE = /(סה["'׳״]?\s?כ|סהכ|מספר|מס['׳]|כמות)\s*:?\s*(ה?פריטים|ה?מוצרים)|(פריטים|מוצרים)\s*:\s*\d/;
+  const SAVERE = /חסכת|חיסכון|חסכון|הנחות|חסכתם/;
+  const SUMRE = /סה["'׳״]?\s?כ|סהכ/;
+  const PAYRE = /ויזה|visa|מאסטר|master|ישראכרט|isracard|אמריקן|amex|דיינרס|diners|כ\.?א\.?ל|עודף|מזומן|התקבל|כרטיס|אשראי|תשלומים/i;
+  const TAXRE = /מע["'׳״]?מ|מעי?ים|ממע|במע|חיי[בנ]\s?ב|פטור/;
+  const PROMOW = /הנחה|הנחת|מבצע|discount|קופון|זיכוי|הטבה|הטבת/i;
+  const NFORX = /(^|[^\d.])\d{1,2}\s*ב\s*-?\s*\d{1,4}([.,]\d{1,2})?(?![\d.])|(^|\s)\d{1,4}([.,]\d{1,2})?\s+\d{1,2}\s*ב(?![א-ת])/;   // "3 ב 85", or read the other way round, "85 3 ב"
+  // a multi-buy offer: N units for X shekels
+  const nforxOf = t => {
+    const s = String(t || '').replace(/,/g, '.');
+    let m = s.match(/(?:^|[^\d.])(\d{1,2})\s*ב\s*-?\s*(\d{1,4}(?:\.\d{1,2})?)(?![\d.])/); if (m) return {n: +m[1], x: +m[2]};
+    m = s.match(/(?:^|\s)(\d{1,4}(?:\.\d{1,2})?)\s+(\d{1,2})\s*ב(?![א-ת])/); if (m) return {n: +m[2], x: +m[1]};
+    return null;
+  };
+  const INFORE = /מוגבל|הזמנה|קופאי|קופה|סניף|חשבונית|עסקה|עיסקה|תודה|לקוח|כתובת|טלפון|עוסק|תאריך|מספר/;
+  const isWeight = t => /\d\.\d{3}(?!\d)/.test(t) && (/ק["״'׳]?ג|kg|גרם/i.test(t) || /[xX×*א]\s*\d|\d\s*[xX×*א]/.test(t));
+  const isUnits = t => /יחיד|יח['׳]/.test(t) && /\d\.\d{2}/.test(t) && /[xX×*]|\d\s*א\s*\d/.test(t);
+  function lev(a, b) {
+    if (a === b) return 0; if (!a.length) return b.length; if (!b.length) return a.length;
+    let prev = new Array(b.length + 1), cur = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+    for (let i = 1; i <= a.length; i++) { cur[0] = i; for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); const t = prev; prev = cur; cur = t; }
+    return prev[b.length];
+  }
+  const ratio = (a, b) => { const n = Math.max(a.length, b.length); return n ? 1 - lev(a, b) / n : 0; };
+  const nk = s => String(s || '').replace(/[^א-תA-Za-z0-9%]/g, '');
+  // how much a line is about a product: the product's words found in it (a promo row repeats the product's name)
+  function simName(line, name) {
+    const a = nk(line), b = nk(name); if (!a || !b) return 0;
+    const ws = String(name).split(/\s+/).map(nk).filter(w => /[א-ת]{2,}/.test(w));
+    const lw = String(line).split(/\s+/).map(nk).filter(Boolean);
+    const inn = ws.length ? ws.filter(w => lw.some(x => ratio(w, x) >= 0.75)).length / ws.length : 0;
+    return Math.max(ratio(a, b), inn);
+  }
+  // common words of Israeli receipts: a word one letter away from one of these (and from no other) is that word
+  const LEX = new Set(('לחם לחמניות לחמניה חלה פיתות פיתה בגט טורטיה קרקר קרקרים ביסקוויט עוגיות עוגה עוגת ופל שוקולד ממתקים סוכריות במבה ביסלי תפוצ\'יפס חטיף חטיפים גרנולה קורנפלקס דגני בוקר שיבולת שועל קוואקר אורז פסטה ספגטי פתיתים קוסקוס קמח סוכר מלח פלפל פפריקה כמון שמן זית קנולה חומץ טחינה חומוס מיונז קטשופ חרדל רסק שימורים טונה תירס אפונה שעועית זיתים מלפפונים חמוצים ריבה דבש ממרח חלב שמנת חמאה גבינה גבינת קוטג\' יוגורט מעדן מעדני לבן ביצים ביצה עוף פרגית חזה שוקיים כנפיים הודו בקר טחון אנטריקוט שניצל נקניק נקניקיות פסטרמה סלמון דג דגים אמנון טופו ירקות פירות תפוח תפוחים תפוחי אדמה בטטה גזר בצל שום לימון לימונים מלפפון מלפפונים עגבניה עגבניות שרי חסה כרוב כרובית ברוקולי קישוא קישואים חציל גמבה דלעת סלק צנון פטרוזיליה כוסברה שמיר נענע בננה בננות תפוז תפוזים קלמנטינה אשכולית אשכוליות ענבים אבטיח מלון אגס אגסים אפרסק שזיף מנגו אבוקדו תות תותים קיווי אננס רימון תאנים תמרים מיובשים אגוזים שקדים בוטנים גרעינים מים מינרליים סודה מיץ משקה משקאות קולה ספרייט שוופס בירה יין קפה נמס תה קקאו אבקת כביסה מרכך נוזל כלים סבון שמפו משחת שיניים מברשת נייר טואלט מגבונים חיתולים טיטולים פמפרס שקיות אשפה אלומיניום ניילון מטהר אוויר אקונומיקה ספוג מגבות טישו תנובה שטראוס אסם עלית יטבתה טרה תלמה זוגלובק יכין אחלה דנונה אקטימל יופלה נסטלה קוקה גרם ליטר מארז שישיה שישייה רביעיה רביעייה יחידות ארוז ארוזה גדול גדולה קטן קטנה בינוני בינוניים טרי טריה קפוא קפואה מלא מלאה לייט דל שומן בטעם וניל אמריקאי אמריקה ארוכות קריספי חממה יבש רגיל רגילה אדום אדומה ירוק ירוקה צהוב לבנה שחור מתוק מתוקה חריף פרוס פרוסות מבושל מטוגן צלוי צלויה מעושן כשר עור בלי עם מילוי קלאסי מקורי טבעי אורגני מועשר מוגז דיאט זירו ערוגות לקט מיקס אשכולות מאיה בייגלה סנדוויץ קישוט צבעוני תערובת להכנת מוזלי פרימיום חיתולי דניאלה משפחתי שומשום מקמח חיטה מחמצת בונזור ניגוב נביעות').split(' '));
+  const CONFUSE = ['גנ', 'חה', 'הת', 'חת', 'דר', 'רך', 'ון', 'וז', 'וי', 'בכ', 'סם', 'טמ', 'עצ', 'בנ', 'םס', 'יו'];
+  function fixWord(w) {
+    if (w.length < 3 || LEX.has(w) || !/^[א-ת'"״׳]+$/.test(w)) return w;
+    const hits = [];
+    for (const x of LEX) {
+      if (Math.abs(x.length - w.length) > 1) continue;
+      let ok = false;
+      if (w.length < 4) { if (x.length === w.length) { let d = -1, n = 0; for (let i = 0; i < w.length; i++) if (w[i] !== x[i]) { n++; d = i; } ok = n === 1 && CONFUSE.some(p => p.includes(w[d]) && p.includes(x[d])); } }
+      else ok = lev(w, x) === 1;
+      if (ok) { hits.push(x); if (hits.length > 1) break; }
+    }
+    return hits.length === 1 ? hits[0] : w;
+  }
+  // a product name: the words of the row without its code and price; misread words fixed; a name the family saved before wins
+  function nameOf(t) { let n = cleanName(String(t || '').replace(/(^|\s)\d{4,14}(?=\s|$)/g, ' ')).split(' '); const junk = w => w.length <= 3 && /\d/.test(w) && /[א-ת]/.test(w); while (n.length && junk(n[0])) n.shift(); while (n.length && junk(n[n.length - 1])) n.pop(); return n.join(' '); }
+  function polish(name, store, known, conf) {
+    if (!name) return name;
+    let n = conf != null && conf >= 85 ? name : name.split(' ').map(fixWord).join(' ');
+    if (known && known.length && nk(n).length >= 3) {
+      const a = nk(n); let best = null, bs = 0;
+      for (const k of known) {
+        const b = nk(k.name); if (!b || Math.abs(b.length - a.length) > Math.max(3, a.length * 0.4)) continue;
+        const s = ratio(a, b) + (store && k.store === store ? 0.03 : 0);
+        if (s > bs) { bs = s; best = k.name; }
+      }
+      if (best && bs >= 0.8) n = best;
+    }
+    return n;
+  }
+  const poorName = n => { const letters = n.replace(/[^א-תA-Za-z]/g, '').length; return letters < 3 || !/[א-תA-Za-z]{3,}/.test(n) || letters / Math.max(1, n.replace(/\s/g, '').length) < 0.6 || (!/[א-ת]/.test(n) && /^[a-z]{1,4}$/.test(n.replace(/\s/g, ''))); };
+  const promoText = t => String(t || '').split(' ').filter((w, i, a) => !/^-?\d{1,5}[.,]\d{2}-?$/.test(w) && !/^\d{5,14}$/.test(w) && w !== '-').join(' ').replace(/\s+/g, ' ').trim();
+  // the amount of a row: what the price box read most often, with the minus sign the text pass may have seen
+  function lineAmt(l) {
+    const vs = (l.alts || []).map(a => priceFirst(a)).filter(v => v != null && Math.abs(v) < 100000);
+    let box = null;
+    if (vs.length) { const m = new Map(); for (const v of vs) m.set(v, (m.get(v) || 0) + 1); let bc = 0; for (const [v, c] of m) if (c > bc) { bc = c; box = v; } if (m.get(vs[0]) === bc) box = vs[0]; }
+    const tv = priceOf(l.t), tm = String(l.t).match(/(?<![\d.])(\d{1,2}):(\d{2})(?![\d.])/);
+    if (tm && !/\d[.,]\d{2}/.test(String(l.t).replace(tm[0], ' '))) { const tt = Number(tm[1] + '.' + tm[2]); if (box == null || Math.abs(Math.abs(box) - tt) < 0.005) return null; }
+    if (box == null) return tv;
+    if (tv != null && Math.abs(Math.abs(tv) - Math.abs(box)) < 0.005) return tv < 0 || box < 0 ? -Math.abs(box) : Math.abs(box);
+    return box;
+  }
+  // "1.285 ק"ג X 17.90", "3.296 x 37.90  124.92", "28.33 x 5 יחיד 141.65": quantity, unit price and the amount they make
+  function detailOf(l) {
+    const t = l.t.replace(/,/g, '.');
+    let q = null, units = false; const wq = t.match(/(\d{1,3}\.\d{3})(?!\d)/);
+    if (wq) q = Number(wq[1]);
+    else { const u = t.match(/(\d{1,3})\s*יח/) || t.match(/[xX×*א]\s*(\d{1,3})(?![\d.])/) || t.match(/(?<![\d.])(\d{1,3})\s*[xX×*א]/); if (u) { q = Number(u[1]); units = true; } }
+    if (!q) return null;
+    const rest = wq ? t.replace(wq[1], ' ') : t, nums = [...rest.matchAll(/(\d{1,5}\.\d{2})(?!\d)/g)].map(m => Number(m[1]));
+    let unit = null, ext = null;
+    const xm = rest.match(/[xX×*א]\s*(\d{1,4}\.\d{2})(?!\d)|(\d{1,4}\.\d{2})\s*[xX×*א]/);
+    if (xm) unit = Number(xm[1] || xm[2]);
+    for (const u of nums) for (const e of nums) if (u !== e && Math.abs(q * u - e) < 0.015) { unit = u; ext = e; }
+    if (!unit && !units && nums.length === 1) unit = nums[0];
+    if (!unit) return {q, units, unit: null, calc: []};
+    return {q, units, unit, ext: ext != null ? Math.round(ext * 100) : null, calc: [Math.round(q * unit * 100), Math.floor(q * unit * 100 + 1e-6)]};
+  }
+  function kindOf(l) {
+    const t = l.t, amt = l.amt, heb = (t.match(/[א-ת]/g) || []).length;
+    if (TOTALRE.test(t) && !/תשלומים/.test(t)) return 'total';
+    if (SUBRE.test(t)) return 'subtotal';
+    if (COUNTRE.test(t)) return 'count';
+    if (SAVERE.test(t)) return 'savings';
+    if (SUMRE.test(t)) return 'total1';
+    if (PAYRE.test(t)) return 'payment';
+    if (TAXRE.test(t)) return 'tax';
+    if (DEPOSIT.test(t)) return 'deposit';
+    const tl = t.replace(/,/g, '.');
+    if (isWeight(tl) || isUnits(tl)) return 'detail';
+    if (amt != null && amt < 0) return 'promo';
+    if (PROMOW.test(t)) return amt != null ? 'promo' : 'info';
+    if (NFORX.test(t)) {   // a discount only when the row shows an amount besides the offer's own price
+      const o = nforxOf(t), other = (t.replace(/,/g, '.').match(/\d{1,5}\.\d{2}/g) || []).map(Number).filter(v => !o || Math.abs(v - o.x) > 0.005);
+      return amt != null && other.length ? 'promo?' : 'info';
+    }
+    if (amt != null && amt > 0) return 'product';
+    if (/^\d{4,14}$/.test(t.replace(/\s/g, ''))) return 'code';
+    if (INFORE.test(t)) return 'info';
+    if (heb >= 3) return 'name';
+    return 'other';
+  }
+  const storeIn = text => { const a = storeByIds(text); if (a) return a; const f = sq(text); for (const s of STORES) if (f.includes(sq(s))) return s.replace('סופר-פארם', 'סופר פארם'); return ''; };
+
+  // ---------- several photos of one receipt: which belong to it, in which order, and the rows two photos share ----------
+  // where two photos of one receipt share rows: the end of A against the start of B.
+  // An alignment with gaps, so a row that one photo missed (or read as junk) does not shift the rest.
+  function overlap(A, B) {
+    // a row's key without its barcode: one photo often reads the barcode wrong, or not at all
+    const K = new Map(), key = l => { let v = K.get(l); if (!v) { const f = nk(l.t.replace(/\d{5,}/g, ' ')); v = {f, n: f.replace(/[\d.%]/g, '')}; K.set(l, v); } return v; };
+    const amtOk = (a, b) => a.amt == null || b.amt == null || Math.abs(a.amt - b.amt) < 0.005 || swaps(Math.round(a.amt * 100)).includes(Math.round(b.amt * 100));
+    // how alike two rows are: 0 (other rows) to 1 (a long row read the same)
+    const same = (a, b) => {
+      const x = key(a), y = key(b); if (x.f.length < 2 || y.f.length < 2) return 0;
+      const w = Math.min(1, Math.max(x.f.length, y.f.length) / 8);
+      if (ratio(x.f, y.f) >= 0.62) return w;
+      if (x.n.length >= 4 && y.n.length >= 4 && ratio(x.n, y.n) >= 0.75 && amtOk(a, b)) return w;
+      return a.amt != null && b.amt != null && Math.abs(a.amt - b.amt) < 0.005 && ratio(x.n, y.n) >= 0.45 ? w : 0;
+    };
+    const a0 = Math.max(0, A.length - 40), As = A.slice(a0), Bs = B.slice(0, 40), n = As.length, m = Bs.length, G = 0.6, NEG = -1e9;
+    const none = {m: 0, ops: [], a0: A.length, b1: 0};
+    if (!n || !m) return none;
+    const S = [], T = [];
+    for (let i = 0; i <= n; i++) { S.push(new Float64Array(m + 1).fill(NEG)); T.push(new Int8Array(m + 1)); S[i][0] = 0; }   // rows of A before the shared part are free
+    for (let i = 0; i <= n; i++) for (let j = 1; j <= m; j++) {
+      let v = NEG, t = 0;
+      if (i && S[i - 1][j - 1] > NEG) { const w = same(As[i - 1], Bs[j - 1]); if (w) { v = S[i - 1][j - 1] + w; t = 1; } }
+      if (i && S[i - 1][j] > NEG && S[i - 1][j] - G > v) { v = S[i - 1][j] - G; t = 2; }   // a row only A read
+      if (S[i][j - 1] > NEG && S[i][j - 1] - G > v) { v = S[i][j - 1] - G; t = 3; }       // a row only B read
+      S[i][j] = v; T[i][j] = t;
+    }
+    let bj = 0, bv = 0;
+    for (let j = 1; j <= m; j++) if (S[n][j] > bv + 1e-9) { bv = S[n][j]; bj = j; }   // the shared part ends where A ends
+    if (!bj) return none;
+    const ops = []; let i = n, j = bj;
+    while (j > 0) { const t = T[i][j]; if (t === 1) { ops.push({i: a0 + i - 1, j: j - 1}); i--; j--; } else if (t === 2) { ops.push({i: a0 + i - 1}); i--; } else { ops.push({j: j - 1}); j--; } }
+    ops.reverse();
+    const M = ops.filter(o => o.i != null && o.j != null), H = M.reduce((a, o) => a + same(A[o.i], B[o.j]), 0), ra = n - i, rb = bj;
+    const ok = M.length >= 2 ? H >= 1.5 && H >= 0.45 * Math.min(ra, rb) : H >= 0.99 && ra <= 3 && rb <= 3;
+    return ok ? {m: H, ops, a0: a0 + i, b1: bj} : none;
+  }
+  // the better reading of one row that both photos show
+  function better(a, b) { return (b.amt != null && a.amt == null) || ((b.amt != null) === (a.amt != null) && b.conf > a.conf + 8) ? b : a; }
+  function loose(a, b) {
+    const x = nk(a.t), y = nk(b.t); if (x.length < 2 || y.length < 2) return false;
+    if (a.amt != null && b.amt != null) return Math.abs(a.amt - b.amt) < 0.005 && ratio(x.replace(/[\d.%]/g, ''), y.replace(/[\d.%]/g, '')) >= 0.3;
+    return ratio(x, y) >= 0.45;
+  }
+  // rows read by one photo only, between the same two shared rows: pair what looks alike, keep the rest
+  function gapRows(GA, GB) {
+    const out = GA.slice(), used = new Set();
+    for (const b of GB) {
+      const k = out.findIndex((a, q) => !used.has(q) && GA.includes(a) && loose(a, b));
+      if (k >= 0) { used.add(k); out[k] = better(out[k], b); } else out.push(b);
+    }
+    return out;
+  }
+  function mergeTwo(lines, L, o) {
+    const head = lines.slice(0, o.a0), mid = [], fm = o.ops.findIndex(x => x.i != null && x.j != null);
+    let lm = -1; o.ops.forEach((x, k) => { if (x.i != null && x.j != null) lm = k; });
+    let GA = [], GB = [];
+    for (let k = fm; k <= lm; k++) {
+      const x = o.ops[k];
+      if (x.i != null && x.j != null) { if (GA.length || GB.length) { mid.push(...gapRows(GA, GB)); GA = []; GB = []; } mid.push(better(lines[x.i], L[x.j])); }
+      else if (x.i != null) GA.push(lines[x.i]); else GB.push(L[x.j]);
+    }
+    // before the first shared row: rows only B read sit at its top edge, copies of rows A already has.
+    // after the last shared row: rows only A read sit at its bottom edge; a whole, clear one is kept if B has no copy of it
+    const tailA = o.ops.slice(lm + 1).filter(x => x.i != null).map(x => lines[x.i]), rest = L.slice(o.b1);
+    for (const a of tailA) {
+      const k = rest.slice(0, 3).findIndex(b => loose(a, b));
+      if (k >= 0) rest[k] = better(rest[k], a);
+      else if (a.conf >= 75 && (a.at ? a.at[1] < 0.96 : true) && nk(a.t).length >= 4) mid.push(a);
+    }
+    const dropped = lines.length - head.length + L.length - mid.length - rest.length;
+    return {lines: head.concat(mid, rest), dropped: Math.max(0, dropped)};
+  }
+  function mergePages(pages) {
+    const P = pages.map((p, i) => {
+      const L = p.lines.map(l => Object.assign({}, l, {page: i, at: [i, p.fy ? Math.round(p.fy(l.y) * 1000) / 1000 : 0]}));
+      for (const l of L) l.amt = lineAmt(l);
+      // this photo's total: the amount that the rows of the total and of the payment agree on
+      const tc = new Map();
+      for (const l of L) {
+        if (!(TOTALRE.test(l.t) || SUBRE.test(l.t) || SUMRE.test(l.t) || PAYRE.test(l.t)) || COUNTRE.test(l.t)) continue;
+        const vals = new Set(); if (l.amt != null && l.amt > 0) vals.add(Math.round(l.amt * 100));
+        for (const m of l.t.replace(/,/g, '.').matchAll(/(?<![\d.])(\d{1,5}\.\d{2})(?![\d.])/g)) { const v = Math.round(+m[1] * 100); if (v > 0) vals.add(v); }
+        for (const v of vals) tc.set(v, (tc.get(v) || 0) + 1);   // each row votes once for each amount it shows
+      }
+      let tBest = 0, tN = 0; for (const [a, c] of tc) if (c > tN || (c === tN && a > tBest)) { tBest = a; tN = c; }
+      const top = L.slice(0, Math.max(3, Math.ceil(L.length * 0.3)));
+      // where in a receipt this photo sits: 0 the store's header, 1 the products, 2 the total and the card slip
+      const cls = L.map(l => { const t = l.t;
+        if (TOTALRE.test(t) || SUBRE.test(t) || SUMRE.test(t) || COUNTRE.test(t) || SAVERE.test(t) || PAYRE.test(t) || /שובר|אישור|מסוף|סולק|UID|RRN|EMV|תודה|להתראות/i.test(t)) return 2;
+        if (storeIn(t) || /עוסק|ח\.\s?פ|כתובת|טלפון|טל['׳:]|סניף|קופאי|חשבונית|קבלה/.test(t)) return 0;
+        if (l.amt != null && /[א-ת]{2,}/.test(t)) return 1;
+        return -1; }).filter(c => c >= 0);
+      const pos = cls.length ? cls.reduce((a, c) => a + c, 0) / cls.length : 1;
+      const dm = L.map(l => l.t).join('\n').match(/(?<!\d)(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2}|\d{2})(?!\d)/);
+      const date = dm && +dm[2] >= 1 && +dm[2] <= 12 && +dm[1] >= 1 && +dm[1] <= 31 ? dm[1].padStart(2, '0') + dm[2].padStart(2, '0') + dm[3].slice(-2) : '';
+      return {i, L, pos, date, store: storeIn(L.map(l => l.t).join('\n')), head: top.some(l => storeIn(l.t)), total: tBest, sure: tN >= 2};
+    });
+    const base = P.find(p => p.store), mixed = [];
+    for (const p of P) if (base && p.store && p.store !== base.store) mixed.push(p.i);
+    // two dates that differ in more than one digit (one digit can be a misreading): another day, another receipt
+    const withD = P.filter(p => !mixed.includes(p.i) && p.date);
+    for (const p of withD.slice(1)) if (lev(p.date, withD[0].date) >= 2) mixed.push(p.i);
+    const withT = P.filter(p => !mixed.includes(p.i) && p.total && p.sure);
+    for (const p of withT.slice(1)) if (Math.abs(p.total - withT[0].total) > Math.max(200, withT[0].total * 0.02) && lev(String(p.total), String(withT[0].total)) >= 2) mixed.push(p.i);
+    let keep = P.filter(p => !mixed.includes(p.i));
+    if (!keep.length) keep = [P[0]];
+    // order: the most rows shared from one photo to the next, the store's header first, the total last
+    const ov = keep.map(a => keep.map(b => a === b ? null : overlap(a.L, b.L)));
+    let order = keep.map((_, k) => k);
+    if (keep.length > 1 && keep.length <= 4) {
+      const perms = a => a.length <= 1 ? [a] : a.flatMap((x, k) => perms(a.slice(0, k).concat(a.slice(k + 1))).map(r => [x].concat(r)));
+      let bs = -Infinity;
+      for (const pm of perms(order)) {
+        let s = 0; for (let k = 0; k + 1 < pm.length; k++) s += ov[pm[k]][pm[k + 1]].m * 2;
+        if (keep[pm[0]].head) s += 3; if (keep[pm[pm.length - 1]].total) s += 2;
+        for (let k = 0; k + 1 < pm.length; k++) s -= Math.max(0, keep[pm[k]].pos - keep[pm[k + 1]].pos - 0.2) * 6;   // the slip after the products, the products after the header
+        s -= pm.reduce((a, x, k) => a + Math.abs(x - k), 0) * 0.1;
+        if (s > bs) { bs = s; order = pm; }
+      }
+    }
+    let lines = [], dropped = 0; const seams = [];
+    order.forEach((k, n) => {
+      const L = keep[k].L.slice();
+      if (n > 0) {
+        // the alignment is found again against all rows so far: with three photos, the second may have replaced rows of the first
+        const o = overlap(lines, L);
+        if (o.m) { const r = mergeTwo(lines, L, o); lines = r.lines; dropped += r.dropped; return; }
+        if (L.length) { L[0] = Object.assign({}, L[0], {seam: seams.length}); seams.push([keep[order[n - 1]].i, keep[k].i]); }
+      }
+      lines = lines.concat(L);
+    });
+    return {lines, mixed, dropped, seams, pages: P.map(p => ({store: p.store, total: p.total ? p.total / 100 : 0, rows: p.L.length})), order: order.map(k => keep[k].i)};
+  }
+
+  // ---------- system 2: the products table, built from the classified lines ----------
+  function parseText(pages, fallbackStore, known) {
+    const M = mergePages(pages), L = M.lines, all = L.map(l => l.t).join('\n');
+    let store = storeIn(all);
     if (!store && fallbackStore && fallbackStore !== 'קבלה') store = fallbackStore;
     let date = '';
     const dm = all.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2}|\d{2})(?!\d)/);
-    if (dm) {
-      let [, d, m, y] = dm; y = y.length === 2 ? '20' + y : y;
-      if (+m >= 1 && +m <= 12 && +d >= 1 && +d <= 31 && +y > 2015 && +y < 2100) date = y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
+    if (dm) { let [, d, m, y] = dm; y = y.length === 2 ? '20' + y : y; if (+m >= 1 && +m <= 12 && +d >= 1 && +d <= 31 && +y > 2015 && +y < 2100) date = y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0'); }
+    for (const l of L) l.kind = kindOf(l);
+    // where the products are: from the first product row to the row of the total or of the payment
+    let start = -1;
+    for (let i = 0; i < L.length; i++) {
+      const l = L[i], nx = L[i + 1];
+      if (/(קוד|ברקוד|תאור|תיאור|פריט)/.test(l.t) && /(סכום|מחיר|כמות)/.test(l.t) && l.amt == null) { l.kind = 'header'; start = i + 1; break; }
+      const nm0 = nameOf(l.t), hb0 = (nm0.match(/[א-ת]/g) || []).length;
+      if (l.kind === 'product' && ((!poorName(nm0) && hb0 >= 3 && hb0 >= (nm0.match(/[A-Za-z]/g) || []).length) || (nx && nx.kind === 'detail'))) { start = i; break; }
+      if (l.kind === 'name' && nx && nx.kind === 'detail') { start = i; break; }
+      if (l.kind === 'detail') { const d = detailOf(l); if (d && d.unit && (d.ext != null || (l.amt > 0 && d.calc.some(c => Math.abs(c - Math.round(l.amt * 100)) <= 1)))) { start = Math.max(0, i - 1); break; } }
     }
-    let total = 0, totalRank = 0, deposits = 0, payVal = 0;
-    const WEIGHT = t => /\d\.\d{3}(?!\d)/.test(t) && (/ק["״'׳]?ג|kg/i.test(t) || /[xX×]\s*\d|\d\s*[xX×]/.test(t));
-    const PAY = /ויזה|visa|מאסטר|master|ישראכרט|isracard|אמריקן|amex|דיינרס|diners|כ\.?א\.?ל/i;
-    const discNoAmt = [];
-    const perPage = pages.map((p, pi) => {
-      const items = [], T = p.text;
-      let last = null, lastAt = -9, pend = null, ended = false, started = false;
-      for (let i = 0; i < T.length; i++) {
-        const l = T[i];
-        const heb = (l.t.match(/[א-ת]/g) || []).length;
-        const pl = near(p.price, l), tv = priceOf(l.t);
-        let pv = pl ? priceFirst(pl.t) : null;
-        if (pv == null) pv = tv;
-        else if (tv != null && tv < 0 && Math.abs(Math.abs(tv) - Math.abs(pv)) < 0.005) pv = tv;   // "0.01-": the minus only shows in the text pass
-        const cands = () => candsFrom(decStr(l.t), pl && pl.alts);
-        const push = it => { if (p.fy) it.at = [pi, Math.round(p.fy(l.y) * 1000) / 1000]; items.push(it); last = it; lastAt = i; pend = null; started = true; };
-        const wl = l.t.replace(/,/g, '.');
-        if (PAY.test(l.t) && tv > 0) { payVal = tv; if (items.length) ended = true; continue; }
-        if (!ended && WEIGHT(wl)) {   // "1.285 ק"ג X 17.90" under a product line, or "3.296 x 37.90   124.92" under a name line
-          const q = Number(wl.match(/(\d{1,3}\.\d{3})(?!\d)/)[1]), rest = wl.replace(/(\d{1,3}\.\d{3})(?!\d)/, ' ');
-          const nums = [...rest.matchAll(/\d{1,5}\.\d{2}(?!\d)/g)].map(m => Number(m[0]));
-          const xm = rest.match(/[xX×א]\s*(\d{1,4}\.\d{2})(?!\d)|(\d{1,4}\.\d{2})\s*[xX×]/);
-          let unit = xm ? Number(xm[1] || xm[2]) : null;
-          if (!unit) for (const u of nums) { const e = q * u; if (nums.some(n => n !== u && Math.abs(n - e) < 0.015)) { unit = u; break; } }
-          const eR = unit && q > 0 ? Math.round(q * unit * 100) : 0, eF = unit && q > 0 ? Math.floor(q * unit * 100 + 1e-6) : 0;
-          if (last && i - lastAt <= 2 && !pend) {   // the detail line of the product just read: quantity x unit price checks its price
-            if (eR > 0 && eR < 500000) {
-              last.unit = unit; last.qty = q;
-              last.cands = (last.cands || []).concat([{c: eR, v: 2.5}, {c: eF, v: 2.5}]);
-              const pc = Math.round(last.price * 100);
-              if (Math.abs(pc - eR) > 1 && Math.abs(pc - eF) > 1) last.price = r2(eR / 100);
-            }
-            continue;
-          }
-          let price = eR > 0 ? r2(eR / 100) : null;
-          if (price == null && pend && pv != null && pv > 0) price = r2(pv);
-          if (price != null && price > 0 && price < 5000) {
-            const cs = cands(); if (eR) cs.push({c: eR, v: 3}, {c: eF, v: 3});
-            const it = {name: pend || 'מוצר', price, cands: cs}; if (unit) { it.unit = unit; it.qty = q; }
-            push(it);
-          }
-          continue;   // tare lines ("קיזוז אריזה 0.035 ק"ג") and other weight notes
-        }
-        const nextW = i + 1 < T.length && WEIGHT(T[i + 1].t.replace(/,/g, '.'));
-        const hasCode = /(^|\s)\d{4,13}(\s|$)/.test(l.t);
-        const okPrice = pv != null && pv > 0 && pv < 5000;
-        if (!heb) {
-          // a product line whose name could not be read: an item code, a price, and usually its weight line below
-          if (!ended && okPrice && (nextW || (hasCode && started))) { push({name: 'מוצר', price: r2(pv), cands: cands()}); continue; }
-          const code = (l.t.replace(/\s/g, '').match(/^\d{6,14}$/) || [])[0];   // a barcode under the product
-          if (code && last && !last.code) last.code = code;
-          continue;
-        }
-        if (HEADER.test(l.t)) continue;
-        if (TOTAL.test(l.t)) {
-          const v = pv != null ? Math.abs(pv) : priceOf(l.t);
-          const rank = /לתשלום|total/i.test(l.t) ? 2 : 1;
-          if (v && rank >= totalRank) { total = v; totalRank = rank; }
-          if (rank === 2 && items.length) ended = true;
-          last = null; continue;
-        }
-        if (items.length && /ביניים|בינים|מזומן|אשראי/i.test(l.t)) ended = true;
-        if (SKIP.test(l.t)) { last = null; continue; }
-        if (DEPOSIT.test(l.t)) { if (pv) deposits = r2(deposits + pv); last = null; continue; }
-        if (INFO.test(l.t)) continue;
-        if (ended) continue;   // below the total: tax, payment and card lines
-        if ((/הנחה|הנחת|מבצע|discount/i.test(l.t) && pv || pv < 0) && items.length) {
-          const it = items[items.length - 1];
-          if (Math.abs(pv) <= it.price + 0.001) { const dc = Math.round(Math.abs(pv) * 100); it.price = r2(it.price - Math.abs(pv)); it.disc = (it.disc || 0) + dc; }
-          continue;
-        }
-        if (/יחיד|יח['׳]/.test(l.t) && pend) {   // "28.33 x 5 יחיד 141.65" under a product with no price of its own
-          const tot = priceOf(l.t), q = (l.t.match(/(\d{1,3})\s*יחיד/) || [])[1];
-          if (tot && tot > 0 && tot < 5000) { const it = {name: pend, price: r2(tot), cands: cands()}; if (q && +q > 1) it.qty = +q; push(it); }
-          pend = null; continue;
-        }
-        if (!okPrice) {
-          // "פרגית בלי עור 3 ב-100" right under a product, its amount unreadable: a discount to settle against the total
-          if (last && i - lastAt <= 2 && /-\s*\d|\d\s*-(?!\d)/.test(l.t) && !nextW) { discNoAmt.push(last); continue; }
-          const nm = cleanName(l.t), lt = nm.replace(/[^א-תA-Za-z]/g, '').length;
-          pend = lt >= 3 && !/[=<>]/.test(nm) && lt / nm.replace(/\s/g, '').length >= 0.6 ? nm : null;
-          continue;
-        }
-        pend = null;
-        const name = cleanName(l.t);
-        const letters = name.replace(/[^א-תA-Za-z]/g, '').length;
-        const poor = letters < 3 || (!/[א-ת]/.test(name) && /^[a-z]{1,4}$/.test(name.replace(/\s/g, ''))) || /[=<>]/.test(name) || letters / name.replace(/\s/g, '').length < 0.6 || !/[א-תA-Za-z]{3,}/.test(name);
-        if (poor) {   // a garbled name: still a product when it has an item code or a weight line under it
-          if (nextW || (hasCode && started)) push({name: (name.match(/[א-ת]{2,}/g) || []).join(' ') || 'מוצר', price: r2(pv), cands: cands()});
-          continue;
-        }
-        if (store && sq(name) === sq(store)) continue;
-        const it = {name, price: r2(pv), cands: cands()};
-        const ql = near(p.qty, l);
-        if (ql) {
-          const q = ql.t.replace(/,/g, '.').replace(/\s/g, '');
-          const wm = q.match(/(\d{1,4}\.\d{2})x.*?(\d\.\d{3})$/);
-          if (wm) { it.unit = Number(wm[1]); it.qty = Number(wm[2]); }
-          else if (/^\d{1,2}$/.test(q) && +q > 1 && +q <= 30) it.qty = +q;
-        }
-        push(it);
+    if (start < 0) start = 0;
+    const keepK = ['total', 'total1', 'subtotal', 'count', 'savings', 'payment', 'tax'];
+    for (let i = 0; i < start; i++) if (!keepK.includes(L[i].kind)) L[i].kind = 'header';
+    let end = L.length;
+    for (let i = start; i < L.length; i++) { const k = L[i].kind; if (k === 'total' || k === 'total1' || (k === 'payment' && L[i].amt > 0)) { end = i; break; } }
+    for (let i = end; i < L.length; i++) if (!keepK.includes(L[i].kind)) L[i].kind = 'footer';
+    { // a total printed large right above the payment, misread (a digit lost): it is no product
+      const T0 = new Map(); L.forEach(l => { if (l.amt > 0 && ['total', 'total1', 'payment'].includes(l.kind)) { const a = Math.round(l.amt * 100); T0.set(a, (T0.get(a) || 0) + 1); } });
+      const t0 = [...T0].sort((a, b) => b[1] - a[1])[0], td = t0 ? String(t0[0]) : '';
+      let hs = L.slice(start, Math.max(start, end - 4)).map(l => l.h); if (hs.length < 3) hs = L.map(l => l.h); hs.sort((a, b) => a - b); const mh = hs.length ? hs[hs.length >> 1] : 0;
+      if (mh && td) for (let i = end - 1; i >= Math.max(start, end - 4); i--) {
+        const l = L[i]; if (l.amt == null || l.h < mh * 1.3 || isWeight(l.t.replace(/,/g, '.'))) continue;
+        const ds = [String(Math.round(Math.abs(l.amt) * 100))].concat((l.t.replace(/,/g, '.').match(/\d{1,5}\.\d{2}/g) || []).map(x => x.replace('.', '').replace(/^0+/, '')));
+        if (ds.some(d => lev(d, td) <= 1)) l.kind = 'subtotal';
+      } }
+    // walk the products: a product row, then the rows that belong to it (weight, promo, deposit, barcode)
+    const prods = []; let deposits = 0, extraDisc = 0, pend = -1, afterSub = false;
+    const last = () => prods[prods.length - 1], lastAt = P => P.lines[P.lines.length - 1], amtSum0 = () => prods.reduce((a, P) => a + P.amount, 0);
+    const mk = (name, amount, cands, i, at) => ({name, amount, cands: (cands || []).concat([{c: amount, v: 1.2}]), lines: [i], at, disc: 0, promos: [], notes: [], dep: 0, conf: L[i] ? L[i].conf : 0});
+    for (let i = start; i < end; i++) {
+      const l = L[i]; let k = l.kind;
+      if (k === 'subtotal') { afterSub = true; continue; }
+      if (afterSub && (k === 'product' || k === 'promo?')) { l.kind = 'total1'; continue; }
+      const P = last(), near = P && i - lastAt(P) <= 3;
+      if (k === 'promo?' || (k === 'product' && near && l.amt * 100 < P.amount * 0.6 && simName(l.t, P.name) >= 0.75)) {
+        k = l.kind = near && Math.abs(l.amt) * 100 <= P.amount ? 'promo' : 'product';
       }
-      return items;
+      if (k === 'product') {
+        const name = nameOf(l.t), amount = Math.round(Math.abs(l.amt) * 100);
+        const NP = mk(name, amount, candsFrom(decStr(l.t), l.alts), i, l.at);
+        if (poorName(name)) {
+          const nx = L[i + 1];
+          if (pend >= 0 && i - pend <= 2) { NP.name = nameOf(L[pend].t); NP.lines.unshift(pend); NP.at = L[pend].at; L[pend].used = prods.length; L[pend].kind = 'product'; }
+          else if ((nx && (nx.kind === 'detail' || nx.kind === 'code')) || /(^|\s)\d{4,13}(\s|$)/.test(l.t)) NP.name = (name.match(/[א-ת]{2,}/g) || []).join(' ');
+          else { l.kind = 'other'; continue; }   // a stray number, not a product
+        }
+        const q = String(l.qty || '').replace(/\s/g, ''); if (/^\d{1,2}$/.test(q) && +q > 1 && +q <= 30) NP.cnt = +q;
+        prods.push(NP); l.used = prods.length - 1; pend = -1; continue;
+      }
+      if (k === 'detail') {
+        const d = detailOf(l);
+        if (!d || !d.unit) {
+          // "2 units ... 15.00" with the unit price misread, under the product's name row: the row's amount is the product's price
+          const la = l.amt != null && l.amt > 0 ? Math.round(l.amt * 100) : 0;
+          if (d && la && pend >= 0 && i - pend <= 2 && (!P || lastAt(P) < pend)) {
+            const NP = mk(nameOf(L[pend].t), la, candsFrom(decStr(l.t), l.alts), pend, L[pend].at);
+            if (d.q >= 1 && la % d.q === 0) Object.assign(NP, {q: d.q, unit: la / d.q / 100, units: d.units});
+            NP.lines.push(i); prods.push(NP); L[pend].used = l.used = prods.length - 1; L[pend].kind = 'product'; pend = -1; continue;
+          }
+          l.kind = 'info'; if (P && i - lastAt(P) <= 2) { P.notes.push(l.t); l.used = prods.length - 1; } continue;
+        }
+        if (pend >= 0 && (!P || lastAt(P) < pend)) {   // the name row, then a row that carries its amount
+          const la = l.amt != null && l.amt > 0 ? Math.round(l.amt * 100) : 0;
+          const amount = d.ext != null ? d.ext : la && d.calc.some(c => Math.abs(c - la) <= 1) ? la : d.calc[0];
+          const NP = mk(nameOf(L[pend].t), amount, candsFrom(decStr(l.t), l.alts).concat(d.calc.map(c => ({c, v: 2.5}))), pend, L[pend].at);
+          Object.assign(NP, {q: d.q, unit: d.unit, units: d.units}); NP.lines.push(i);
+          if (d.ext == null && !(la && d.calc.some(c => Math.abs(c - la) <= 1))) NP.wcalc = true;
+          prods.push(NP); L[pend].used = l.used = prods.length - 1; L[pend].kind = 'product'; pend = -1; continue;
+        }
+        if (P && i - lastAt(P) <= 2 && !P.unit) {   // the detail row of the product above: quantity x unit price checks its price
+          Object.assign(P, {q: d.q, unit: d.unit, units: d.units}); P.lines.push(i); l.used = prods.length - 1;
+          const rc = P.cands.find(c => d.calc.some(x => Math.abs(x - c.c) <= 1));   // another reading of the price row agrees with the weight
+          P.cands = P.cands.concat(d.calc.map(c => ({c, v: 2.5})));
+          if (!d.calc.some(c => Math.abs(c - P.amount) <= 1)) {
+            if (d.ext != null && d.calc.some(c => Math.abs(c - d.ext) <= 1)) { P.amount = d.ext; P.wfix = true; }
+            else if (rc) { P.amount = rc.c; P.wfix = true; }
+            else P.wbad = d.calc[0];
+          }
+          continue;
+        }
+        const la = l.amt != null && l.amt > 0 ? Math.round(l.amt * 100) : 0;
+        if (d.ext != null || (la && d.calc.some(c => Math.abs(c - la) <= 1))) {
+          const pv = L[i - 1], nm = pv && !pv.used && pv.kind !== 'header' && /[א-ת]{2,}/.test(pv.t) && pv.amt == null ? nameOf(pv.t) : '';
+          const NP = mk(nm, d.ext != null ? d.ext : la, candsFrom(decStr(l.t), l.alts).concat(d.calc.map(c => ({c, v: 2.5}))), i, l.at);
+          Object.assign(NP, {q: d.q, unit: d.unit, units: d.units}); if (nm) { NP.lines.unshift(i - 1); pv.used = prods.length; pv.kind = 'product'; }
+          prods.push(NP); l.used = prods.length - 1; continue;
+        }
+        l.kind = 'info'; continue;
+      }
+      if (k === 'promo') {
+        const a = l.amt != null ? Math.round(Math.abs(l.amt) * 100) : 0;
+        if (afterSub || !prods.length) { if (a && PROMOW.test(l.t) && a <= amtSum0() * 0.5) { extraDisc += a; l.used = -2; } else l.kind = 'other'; continue; }
+        let bi = prods.length - 1, bs = 0;
+        for (let j = prods.length - 1; j >= Math.max(0, prods.length - 4); j--) { const s = simName(l.t, prods[j].name); if (s > bs + 0.05) { bs = s; bi = j; } }
+        if (bs < 0.45) bi = prods.length - 1;
+        const Q = prods[bi];
+        if (a && a <= Q.amount) { Q.disc += a; Q.promos.push({t: promoText(l.t), c: a}); Q.lines.push(i); l.used = bi; }
+        else if (!a) { Q.pendPromo = true; Q.promos.push({t: promoText(l.t), c: 0}); Q.lines.push(i); l.used = bi; }
+        else if (PROMOW.test(l.t) && a <= amtSum0() * 0.5) { extraDisc += a; l.used = -2; }
+        else l.kind = 'other';   // a minus that is no discount: a misread
+        continue;
+      }
+      if (k === 'deposit') { const a = l.amt != null ? Math.round(Math.abs(l.amt) * 100) : 0; if (a) { deposits += a; l.used = -2; if (near) P.dep += a; } continue; }
+      if (k === 'info') { if (P && i - lastAt(P) <= 2 && (NFORX.test(l.t) || /מוגבל/.test(l.t))) { P.notes.push(l.t); l.used = prods.length - 1; } continue; }
+      if (k === 'code') { if (P && !P.code && i - lastAt(P) <= 2) { P.code = l.t.replace(/\s/g, ''); l.used = prods.length - 1; } continue; }
+      if (k === 'name') { pend = i; continue; }
+    }
+    // the sum line: the first row whose amount is what all the products above it add up to is the total, and what follows is no product
+    { let run = 0;
+      for (let j = 0; j < prods.length; j++) {
+        const Z = prods[j];
+        if (j >= 3 && !Z.unit && !Z.disc && Math.abs(Z.amount - run) <= 1) {
+          for (let k = j; k < prods.length; k++) for (const i of prods[k].lines) { L[i].kind = k === j ? 'total1' : 'footer'; L[i].used = -1; }
+          prods.length = j; break;
+        }
+        run += Z.amount - Z.disc + Z.dep;
+      }
+    }
+    let groupFix = 0, groupOk = 0;
+    { const G = new Map();
+      prods.forEach((P, j) => { for (const n of P.notes) { const o = nforxOf(n); if (o) { const key = o.n + '/' + o.x; if (!G.has(key)) G.set(key, new Set()); G.get(key).add(j); } } });
+      for (const [key, set] of G) {
+        for (const j of [...set]) for (const t of [j - 2, j - 1, j + 1, j + 2]) if (prods[t] && !set.has(t) && simName(prods[t].name, prods[j].name) >= 0.6) set.add(t);   // the same product on the row next to it
+        const ids = [...set].sort((a, b) => a - b), [N, X] = key.split('/').map(Number);
+        if (!(N >= 2 && X > 0)) continue;
+        const units = ids.reduce((a, j) => a + (prods[j].unit && prods[j].units ? prods[j].q : prods[j].cnt || 1), 0);
+        if (units % N) continue;
+        const want = Math.round(units / N * X * 100), have = ids.reduce((a, j) => a + prods[j].amount - prods[j].disc, 0);
+        if (want === have) { groupOk++; continue; }
+        for (const j of ids) {
+          const need = want - (have - (prods[j].amount - prods[j].disc)) + prods[j].disc;
+          if (need > 0 && need !== prods[j].amount && prods[j].cands.some(c => Math.abs(c.c - need) <= 3 || swaps(c.c).includes(need))) { prods[j].amount = need; prods[j].cands = [{c: need, v: 5}]; prods[j].fixed = true; groupFix++; break; }
+        }
+      }
+    }
+    // the total: the rows that state it vote (to pay, total, the card payment, the deal amount)
+    const W = {total: 3, total1: 2, payment: 2, subtotal: 1};
+    const votes = new Map();
+    L.forEach(l => {
+      if (l.amt == null || !(Math.abs(l.amt) > 0)) return;
+      let w = W[l.kind] || 0; if (!w && l.kind === 'footer' && /סכום\s*ע[י]?סקה|סכום\s*העסקה/.test(l.t)) w = 1.5;
+      if (w) { const a = Math.round(Math.abs(l.amt) * 100); votes.set(a, (votes.get(a) || 0) + w); }
     });
-    // several photos of one long receipt overlap by a line or two: drop the repeated edge lines
-    const same = (a, b) => a && b && a.price === b.price && sq(a.name) === sq(b.name) && (a.code || '') === (b.code || '');
-    for (let i = 0; i < perPage.length; i++) for (let j = 0; j < perPage.length; j++) {
-      if (i === j || !perPage[i].length || !perPage[j].length) continue;
-      if (same(perPage[i][perPage[i].length - 1], perPage[j][0])) perPage[j].shift();
+    const discSum = () => prods.reduce((a, P) => a + P.disc, 0), amtSum = () => prods.reduce((a, P) => a + P.amount, 0);
+    const paid = () => amtSum() - discSum() - extraDisc + deposits;
+    let total = 0, tv = 0;
+    const cand = [...votes].filter(([a]) => a >= paid() * 0.3 || paid() > 0 && [...votes].every(([b]) => b < paid() * 0.3));
+    for (const [a, v] of cand) {
+      let sc = v; for (const [b, w] of cand) if (b !== a && lev(String(a), String(b)) <= 1) sc += w * 0.6;
+      if (a === paid()) sc += 2.5;
+      if (sc > tv || (sc === tv && a > total)) { total = a; tv = sc; }
     }
-    let items = perPage.flat();
-    let sum = r2(items.reduce((a, x) => a + x.price, 0));
-    if (!total && items.length) { for (const p of pages) for (const l of p.text) for (const m of l.t.replace(/,/g, '.').matchAll(/\d{1,5}\.\d{2}(?!\d)/g)) if (Math.abs(Number(m[0]) - sum) < 0.006 && sum > 0) total = sum; }
-    if (!total && payVal && items.length && payVal >= sum * 0.5 && payVal <= sum * 1.6 + 5) total = payVal;
-    if (!total && items.length) {   // no "לתשלום" line was readable: the amount that repeats near the end of the receipt
-      const cnt = new Map();
-      for (const p of pages) for (const l of p.text) for (const m of l.t.replace(/,/g, '.').matchAll(/\d{1,5}\.\d{2}(?!\d)/g)) { const v = Number(m[0]); cnt.set(v, (cnt.get(v) || 0) + 1); }
-      let best = 0, bc = 1;
-      for (const [v, c] of cnt) if (c >= 2 && v >= sum * 0.5 && v <= sum * 1.6 + 5 && (c > bc || (c === bc && v > best))) { best = v; bc = c; }
-      if (best) total = best;
+    const sawTotal = L.some(l => l.kind === 'total' && l.amt != null);
+    if (total && paid() !== total) for (let j = prods.length - 1; j >= Math.max(0, prods.length - 3); j--) {
+      const Z = prods[j], zd = [String(Z.amount)].concat((L[Z.lines[0]].t.replace(/,/g, '.').match(/\d{1,5}\.\d{2}/g) || []).map(x => x.replace('.', '').replace(/^0+/, '')));
+      if (Z.unit || Z.disc || paid() - (Z.amount - Z.disc) !== total || !zd.some(d => lev(d, String(total)) <= 1)) continue;
+      for (const i of Z.lines) { L[i].kind = 'subtotal'; L[i].used = -1; }
+      prods.splice(j, 1); break;
     }
-    if (total && items.length > 2) { const k = items.findIndex(x => Math.abs(x.price - total) < 0.011); if (k >= 0 && sum - items[k].price > total * 0.05) { items.splice(k, 1); sum = r2(items.reduce((a, x) => a + x.price, 0)); } }
-    if (total && discNoAmt.length === 1) { const d = r2(sum + deposits - total), it = discNoAmt[0]; if (d > 0.009 && d <= it.price * 0.5) { it.price = r2(it.price - d); it.disc = (it.disc || 0) + Math.round(d * 100); sum = r2(sum - d); } }
-    let fixed = 0;
-    const target = Math.round((total - deposits) * 100);
-    if (total && target > 0 && target <= 300000 && items.length && items.length <= 120 && Math.round(sum * 100) !== target) {
-      const sh = (it, cs) => cs.map(x => ({c: x.c - (it.disc || 0), v: x.v})).filter(x => x.c > 0);
-      let pick = solve(items.map(it => ({cands: sh(it, it.cands || [])})), target);
-      if (!pick) {   // a digit may be misread (7 as 1, 0 as 9): allow single-digit swaps, with a low vote
-        const wide = items.map(it => { const cs = (it.cands || []).slice(), have = new Set(cs.map(x => x.c)); for (const x of it.cands || []) for (const s2 of swaps(x.c)) if (!have.has(s2) && s2 > 0) { have.add(s2); cs.push({c: s2, v: 0.15}); } return {cands: sh(it, cs)}; });
-        if (wide.reduce((a, x) => a + x.cands.length, 0) * target <= 2.5e8) pick = solve(wide, target);
+    // the arithmetic: products, less their promos, plus deposits, make the total
+    let fixed = 0, promoCalc = false, added = 0;
+    if (total) {
+      const D = paid() - total, pp = prods.filter(P => P.pendPromo && !P.disc);
+      if (pp.length === 1 && D > 0 && D <= pp[0].amount * 0.6) { pp[0].disc = D; pp[0].promos[pp[0].promos.length - 1].c = D; pp[0].promoCalc = promoCalc = true; }
+    }
+    if (total && paid() !== total && prods.length && prods.length <= 120) {
+      const target = total - deposits + extraDisc + discSum();
+      if (target > 0 && target <= 400000) {
+        let pick = solve(prods.map(P => ({cands: P.cands})), target);
+        if (!pick) {   // a digit misread (7 for 1, 0 for 9): single-digit swaps, with a low vote
+          const wide = prods.map(P => { const cs = P.cands.slice(), have = new Set(cs.map(x => x.c)); for (const x of P.cands) for (const s2 of swaps(x.c)) if (!have.has(s2) && s2 > 0) { have.add(s2); cs.push({c: s2, v: 0.15}); } return {cands: cs}; });
+          if (wide.reduce((a, x) => a + x.cands.length, 0) * target <= 2.5e8) pick = solve(wide, target);
+        }
+        if (pick) {
+          const ch = pick.filter((c, i) => c !== prods[i].amount).length;
+          if (ch <= Math.max(3, Math.ceil(prods.length * 0.15))) prods.forEach((P, i) => { if (pick[i] !== P.amount) { P.amount = pick[i]; P.fixed = true; fixed++; } if (P.wbad != null && (pick[i] === P.wbad || Math.abs(pick[i] - P.wbad) <= 1)) P.wbad = null; });
+        }
       }
-      if (pick) items.forEach((it, i) => { const v = pick[i] / 100; if (r2(it.price) !== r2(v)) { it.price = r2(v); it.fixed = true; fixed++; } });
     }
-    for (const it of items) { delete it.cands; delete it.disc; }
-    const sum2 = r2(items.reduce((a, x) => a + x.price, 0));
-    return {store, date, items, total, sum: sum2, deposits, fixed};
+    if (total && paid() < total) {   // a row with a price that was not recognized, and is exactly what is missing
+      const miss = total - paid();
+      const k = L.findIndex((l, i) => i >= start && i < end && l.used == null && l.amt != null && l.amt > 0 && Math.round(l.amt * 100) === miss);
+      if (k >= 0) { const NP = mk(nameOf(L[k].t), miss, [], k, L[k].at); NP.added = true; prods.push(NP); L[k].used = prods.length - 1; L[k].kind = 'product'; added = 1; }
+    }
+    // names: misread words fixed, names saved before recognized
+    for (const P of prods) P.name = polish(P.name, store, known, P.conf);
+    const items = prods.map(P => {
+      const it = {name: P.name && P.name.length >= 2 ? P.name : 'מוצר', price: r2((P.amount - P.disc) / 100)};
+      if (P.disc) { it.orig = r2(P.amount / 100); it.disc = r2(P.disc / 100); }
+      const pt = P.promos.map(p => p.t).filter(Boolean).join(' · '); if (pt) it.promo = pt.slice(0, 70);
+      if (P.unit) { it.qty = P.q; it.unit = P.unit; if (P.units) it.units = true; } else if (P.cnt) it.qty = P.cnt;
+      if (P.code) it.code = P.code;
+      if (P.dep) it.dep = r2(P.dep / 100);
+      if (P.at) it.at = P.at;
+      if (P.fixed) it.fixed = true;
+      else if (P.wbad != null) { it.warn = 'weight'; it.calc = r2(P.wbad / 100); }
+      if (P.promoCalc) it.warn = 'promo';
+      if (P.added) it.warn = 'added';
+      if (it.name === 'מוצר' && !it.warn) it.warn = 'name';
+      return it;
+    });
+    const sum = r2(items.reduce((a, x) => a + x.price, 0));
+    // the checks, in plain words, for the screen that shows them
+    const C = [], money = c => '₪' + (c / 100).toFixed(2);
+    const nPages = pages.length - M.mixed.length;
+    C.push({key: 'lines', ok: true, text: 'נקראו ' + L.length + ' שורות' + (nPages > 1 ? ' מ־' + nPages + ' תמונות' : '') + (M.dropped ? '. ' + (M.dropped === 1 ? 'שורה אחת שחזרה בשתי תמונות נספרה' : M.dropped + ' שורות שחזרו בשתי תמונות נספרו') + ' פעם אחת' : '') + '.'});
+    for (const i of M.mixed) { const pg = M.pages[i]; C.push({key: 'mixed', ok: false, page: i, text: 'תמונה ' + (i + 1) + ' היא מקבלה אחרת' + (pg.store ? ' (' + pg.store + ')' : '') + ', ולכן היא לא נכללה.'}); }
+    // two photos with no row in common, joined inside the products: a product could be missing there, or a photo is of another receipt
+    M.seams.forEach(([a, b], n) => {
+      const at = L.findIndex(l => l.seam === n); if (at >= 0 && (at <= start || at > end)) return;
+      const pair = 'בין תמונה ' + (a + 1) + ' לתמונה ' + (b + 1) + ' אין שורות משותפות';
+      C.push({key: 'seam', ok: false, text: !!total && paid() === total ? pair + ', אז חיברתי אותן לפי הסדר, והסכום מסתדר. בפעם הבאה צלם כך ששורה או שתיים יופיעו בשתי התמונות.' : pair + ', והסכום לא מסתדר. ייתכן שחסר מוצר בתפר, או שהתמונות לא מאותה קבלה.'});
+    });
+    const cl = L.find(l => l.kind === 'count'), printed = cl ? +((cl.t.match(/(?<![\d.])(\d{1,3})(?![\d.])/) || [])[1] || 0) : 0;
+    const units = prods.reduce((a, P) => a + (P.unit ? (P.units ? P.q : 1) : (P.cnt || 1)), 0);
+    if (printed) C.push({key: 'count', ok: printed === prods.length || printed === units, text: printed === prods.length || printed === units ? prods.length + ' מוצרים, כמו שכתוב בקבלה.' : 'נמצאו ' + prods.length + ' מוצרים, ובקבלה כתוב ' + printed + ' פריטים. ייתכן שמוצר לא נקרא.'});
+    else C.push({key: 'count', ok: true, text: prods.length === 1 ? 'נמצא מוצר אחד.' : 'נמצאו ' + prods.length + ' מוצרים.'});
+    const wp = prods.filter(P => P.unit), wbad = prods.filter(P => P.wbad != null && !P.fixed).length, wfix = prods.filter(P => P.wfix || P.wcalc).length;
+    const inN = n => n === 1 ? 'במוצר אחד' : 'ב־' + n + ' מוצרים';
+    if (wp.length) C.push({key: 'weight', ok: !wbad, text: wbad ? inN(wbad) + ' הכמות כפול המחיר ליחידה לא יוצא כמו המחיר. ' + (wbad === 1 ? 'הוא מסומן' : 'הם מסומנים') + ' בצהוב.' : inN(wp.length) + ' הכמות כפול המחיר ליחידה מתאים למחיר' + (wfix ? ' (' + (wfix === 1 ? 'מחיר אחד נלקח' : wfix + ' מחירים נלקחו') + ' מהחישוב)' : '') + '.'});
+    const pr = prods.filter(P => P.disc);
+    if (pr.length || extraDisc) C.push({key: 'promos', ok: true, text: (pr.length === 1 ? 'מבצע אחד' : pr.length + ' מבצעים והנחות') + ', סך הכול ' + money(discSum() + extraDisc) + '. כל מבצע מופיע מתחת למוצר שלו.' + (promoCalc ? ' את הסכום של מבצע אחד חישבתי מהסכום לתשלום.' : '')});
+    if (deposits) C.push({key: 'deposits', ok: true, text: 'פיקדון על בקבוקים: ' + money(deposits) + '.'});
+    // a row left out that shows the total itself is the total row, read badly: no product is missing there
+    for (const l of L) if (l.used == null && l.amt != null && total && Math.abs(Math.round(l.amt * 100) - total) <= 1 && ['other', 'name', 'product'].includes(l.kind)) l.kind = 'total';
+    const loose = L.filter((l, i) => i >= start && i < end && l.used == null && l.amt != null && l.amt > 0 && ['other', 'name', 'product'].includes(l.kind)).length;
+    if (loose) C.push({key: 'loose', ok: false, text: (loose === 1 ? 'שורה אחת עם מחיר לא נכנסה' : loose + ' שורות עם מחיר לא נכנסו') + ' לטבלה. אפשר לראות ולהוסיף ב"כל הטקסט".'});
+    if (groupOk || groupFix) C.push({key: 'nforx', ok: true, text: 'מבצעי "כמה ב..." נבדקו: המוצרים בכל מבצע מסתכמים במחיר המבצע' + (groupFix ? ' (' + (groupFix === 1 ? 'מחיר אחד תוקן' : groupFix + ' מחירים תוקנו') + ' לפי המבצע)' : '') + '.'});
+    if (fixed) C.push({key: 'fixed', ok: false, text: (fixed === 1 ? 'מחיר אחד תוקן כדי שהסכום יסתדר. הוא מסומן בצהוב.' : fixed + ' מחירים תוקנו כדי שהסכום יסתדר. הם מסומנים בצהוב.')});
+    if (added) C.push({key: 'added', ok: false, text: 'שורה שלא זוהתה הוספה כמוצר, כי המחיר שלה הוא בדיוק מה שחסר. היא מסומנת בצהוב.'});
+    if (!sawTotal) C.push({key: 'nototal', ok: !!total && paid() === total, text: total ? 'שורת "לתשלום" לא נקראה בבירור, אז את הסכום לקחתי משורת התשלום' + (paid() === total ? ', והוא מתאים למוצרים.' : '. בדוק אותו מול הקבלה.') : 'לא מצאתי בקבלה את הסכום לתשלום. הכנס אותו בעצמך.'});
+    C.push({key: 'sum', ok: !!total && paid() === total, text: ''});
+    const out = L.map(l => ({t: l.t, kind: l.kind === 'promo?' ? 'promo' : l.kind, page: l.page, at: l.at, used: l.used == null ? -1 : l.used, amt: l.amt == null ? null : l.amt, h: Math.round(l.h || 0)}));
+    return {store, date, items, total: total ? r2(total / 100) : 0, sum, deposits: r2(deposits / 100), discount: r2(extraDisc / 100), fixed, checks: C, lines: out, pages: M.pages, mixed: M.mixed, printed};
+  }
+
+  function parse(pages, fallbackStore, known) {
+    if (pages.some(p => p.table)) return parseTable(pages, fallbackStore);
+    return parseText(pages, fallbackStore, known);
   }
 
   window.hhOcrRead = async function (sources, opts) {
-    const o = opts || {}, say = o.say || (() => {});
+    const o = opts || {}, say = o.say || (() => {}), stage = o.stage || (() => {});
     const E = await engine(say); window.hhOcrEngine = E;
-    const pages = [];
+    const pages = []; let rows = 0;
     for (let i = 0; i < sources.length; i++) {
-      const lbl = sources.length > 1 ? 'קורא תמונה ' + (i + 1) + ' מתוך ' + sources.length : 'קורא את הקבלה';
-      pages.push(await readOne(E, sources[i], f => say(lbl + '… ' + Math.round((i + f) / sources.length * 100) + '%')));
+      const of = sources.length > 1 ? ' (תמונה ' + (i + 1) + ' מתוך ' + sources.length + ')' : '';
+      stage('lines', {page: i, of: sources.length, rows});
+      say('מוצא את השורות' + of + '…');
+      pages.push(await readOne(E, sources[i], (f, d, n) => { stage('read', {page: i, of: sources.length, done: d, rows: n, pct: Math.round((i + f) / sources.length * 100)}); say('קורא שורה ' + (d || 0) + ' מתוך ' + (n || 0) + of + '… ' + Math.round((i + f) / sources.length * 100) + '%'); },
+        n => { rows += n; stage('found', {page: i, of: sources.length, rows}); }));
     }
     window.hhOcrLast = pages;
-    return parse(pages, o.store);
+    stage('logic', {rows}); await tick();
+    const r = parse(pages, o.store, o.known);
+    stage('table', {items: (r.items || []).length});
+    return r;
   };
-  window.hhOcrParse = parse; window.hhFindPaper = findPaper;
+  window.hhOcrParse = parse; window.hhFindPaper = findPaper; window.hhOcrKinds = LABEL;
   window.hhOcrMsg = e => {
     const c = e && e.code;
     if (c === 'script') return 'קורא הקבלות לא נטען בתצוגה הזו.';
@@ -3800,37 +4335,59 @@ async function shrinkPhoto(file) {
 })();
 </script>
 <script>
-// ---------- the receipt scanner: photos → scan → check and fix every line → save ----------
+// ---------- the receipt scanner: photos → find every row, read it, check the logic → products table → save ----------
 (function () {
-  if (window.hhScanner) return;
+  if (window.hhScanner && window.hhScanner.v >= 3) return;   // an older copy of the scanner is replaced by this one
   const H = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const icon = (n, s) => { try { return window.hhIcon ? window.hhIcon(n, s || 18) : H('span'); } catch (e) { return H('span'); } };
   const r2 = v => Math.round(v * 100) / 100;
-  const money = v => (typeof fmts !== 'undefined' && fmts.money) ? fmts.money(v) : '₪' + (+v).toFixed(2);
+  // the page's own helpers: shared on window.hhHelpers (each script of the dashboard runs in its own scope), or globals in a one-file page
+  const api = n => { const a = window.hhHelpers || {}; if (a[n]) return a[n]; try { return ({fmts: typeof fmts !== 'undefined' ? fmts : null, todayISO: typeof todayISO === 'function' ? todayISO : null, allCats: typeof allCats === 'function' ? allCats : null, guessCat: typeof guessCat === 'function' ? guessCat : null, dbPhotoUrl: typeof dbPhotoUrl === 'function' ? dbPhotoUrl : null, shrinkPhoto: typeof shrinkPhoto === 'function' ? shrinkPhoto : null})[n] || null; } catch (e) { return null; } };
+  const money = v => { const f = api('fmts'); return f && f.money ? f.money(v) : '₪' + (+v).toFixed(2); };
   const pnum = s => { const t = String(s == null ? '' : s).replace(/[₪\s]/g, '').replace(/,/g, '.').replace(/[−–]/g, '-'); return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? Number(t) : NaN; };
-  const today = () => typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10);
+  const today = () => { const f = api('todayISO'); return f ? f() : new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Jerusalem'}); };
   const nrm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  const cats = () => { try { return typeof allCats === 'function' ? allCats() : []; } catch (e) { return []; } };
-  const guess = s => { try { const c = s && typeof guessCat === 'function' ? guessCat(s) : ''; return c && c !== 'אחר' ? c : ''; } catch (e) { return ''; } };
+  const cats = () => { try { const f = api('allCats'); return f ? f() : []; } catch (e) { return []; } };
+  const guess = s => { try { const f = api('guessCat'), c = s && f ? f(s) : ''; return c && c !== 'אחר' ? c : ''; } catch (e) { return ''; } };
   const photoUrl = async rid => {
-    if (String(rid).startsWith('db:') && typeof dbPhotoUrl === 'function') return await dbPhotoUrl(rid);
+    const db = api('dbPhotoUrl');
+    if (String(rid).startsWith('db:') && db) return await db(rid);
     const u = window.hhBlobUrl ? window.hhBlobUrl(rid) : '';
     return u || '/_blob/' + rid;
   };
   const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('photo')); i.src = src; });
-  const shrink = async f => typeof shrinkPhoto === 'function' ? Object.assign(await shrinkPhoto(f), {file: f}) : {blob: f, file: f};
+  const shrink = async f => { const sp = api('shrinkPhoto'); return sp ? Object.assign(await sp(f), {file: f}) : {blob: f, file: f}; };
   const payers = () => [...document.querySelectorAll('#add [data-payer]')].filter(b => !b.hidden && !b.closest('[hidden]')).map(b => ({v: b.dataset.payer, label: b.textContent.trim()}));
   const inWebView = /; wv\)/.test(navigator.userAgent);
   const draw = n => { try { if (window.dash) window.dash.draw(n); } catch (e) {} };
   const tell = m => { window.hhStatus = m; draw('formstatus'); };
-  const flagged = it => it && (it.fixed || !it.name || it.name === 'מוצר' || /^שאר המוצרים/.test(it.name));
+  const MAXP = 4;
+  const NOTE = {
+    fixed: () => 'המחיר תוקן כדי שהסכום יסתדר. השווה לקבלה.',
+    weight: it => 'הכמות כפול המחיר ליחידה יוצא ' + money(it.calc) + '. בדוק את המחיר.',
+    promo: () => 'סכום המבצע חושב מהסכום לתשלום. השווה לקבלה.',
+    added: () => 'השורה הזו לא זוהתה כמוצר. הוספתי אותה כי המחיר שלה הוא בדיוק מה שחסר.',
+    name: () => 'השם לא נקרא. השלם אותו מהקבלה.'
+  };
+  const flagged = it => it && (it.fixed || it.warn || !it.name || it.name === 'מוצר' || /^שאר המוצרים/.test(it.name));
+  // product names the family saved before: the reader prefers them over a misread
+  const known = () => {
+    const out = [], seen = new Set();
+    for (const e of (window.hhEntries || []).slice().reverse()) {
+      if (!Array.isArray(e.items)) continue;
+      for (const it of e.items) { const n = String(it && it.name || '').trim(); if (n.length < 3 || n === 'מוצר' || /^שאר המוצרים/.test(n) || seen.has(n)) continue; seen.add(n); out.push({name: n, store: e.store || ''}); }
+      if (out.length > 1500) break;
+    }
+    return out;
+  };
 
   let ov, ttl, inner, stA, stB, stC, goBtn, secBtn, errBox;
-  let pagesBox, camIn, galIn, camBtn, moreIn;
-  let scanImg, progI, statP;
-  let verdict, fStore, fDate, fCat, payBox, methBox, shotBox, zoomBtn, hideBtn, rowsBox, cntSpan, sumB, depLine, depIn, payIn;
+  let pagesBox, camIn, galIn, camBtn, moreIn, pickHint;
+  let scanImg, progI, statP, steps;
+  let verdict, checksBox, fStore, fDate, fCat, payBox, methBox, shotBox, zoomBtn, hideBtn, tabs, tablePanel, textPanel, rowsBox, cntSpan, sumB, discLine, discB, depLine, depIn, xLine, xIn, payIn;
   let S = null, markEl = null;
-  // tapping a product shows its line on the photo: the reader keeps where on the receipt each line was read
+
+  // tapping a product or a line marks where it was read on the photo
   function showAt(at) {
     if (!at || !shotBox || shotBox.hidden) return;
     const im = shotBox.querySelectorAll('img')[at[0]]; if (!im || !im.clientHeight) return;
@@ -3841,18 +4398,19 @@ async function shrinkPhoto(file) {
     const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     shotBox.scrollTo({top: Math.max(0, y - shotBox.clientHeight / 2), behavior: still ? 'auto' : 'smooth'});
   }
-
-  function seg(label, opts, value, onPick) {
-    const f = H('div', 'hh-field'), l = H('span', null, label), g = H('div', 'hh-seg'); g.setAttribute('role', 'group');
-    const id = 'sc-l' + Math.random().toString(36).slice(2, 7); l.id = id; g.setAttribute('aria-labelledby', id);
+  function seg(label, opts, value, onPick, cls) {
+    const f = H('div', 'hh-field'), g = H('div', 'hh-seg' + (cls ? ' ' + cls : '')); g.setAttribute('role', 'group');
+    if (label) { const l = H('span', null, label), id = 'sc-l' + Math.random().toString(36).slice(2, 7); l.id = id; g.setAttribute('aria-labelledby', id); f.append(l); }
+    else g.setAttribute('aria-label', opts.map(o => o.label).join(' או '));
     for (const o of opts) {
       const b = H('button', null, o.label); b.type = 'button'; b.dataset.v = o.v;
       b.addEventListener('click', () => { for (const x of g.children) { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); } onPick(o.v); });
       const on = o.v === value; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); g.append(b);
     }
-    f.append(l, g); return f;
+    f.append(g); return f;
   }
   function field(label, input, wide) { const f = H('label', 'hh-field' + (wide ? ' sc-wide' : '')); f.append(document.createTextNode(label), input); return f; }
+  function moneyIn(cls) { const i = H('input', cls); i.type = 'text'; i.inputMode = 'decimal'; i.autocomplete = 'off'; i.dir = 'ltr'; i.placeholder = '0.00'; return i; }
 
   function build() {
     ov = H('div', 'sc-ov'); ov.hidden = true; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
@@ -3860,9 +4418,9 @@ async function shrinkPhoto(file) {
     const x = H('button', 'sc-close', 'סגירה'); x.type = 'button'; x.addEventListener('click', close);
     top.append(ttl, x);
     const body = H('div', 'sc-body'); inner = H('div', 'sc-in'); body.append(inner);
-    errBox = H('p', 'sc-err'); errBox.hidden = true; errBox.setAttribute('role', 'alert');
+    errBox = H('div', 'sc-err'); errBox.hidden = true; errBox.setAttribute('role', 'alert');
 
-    // step 1 — photos
+    // the photos: one receipt, in up to four parts
     stA = H('div'); stA.style.cssText = 'display:flex;flex-direction:column;gap:14px';
     const pick = H('div', 'sc-pick');
     camBtn = H('button', 'sc-cam'); camBtn.type = 'button'; camBtn.append(icon('camera', 26), H('span', null, 'צילום'));
@@ -3872,22 +4430,29 @@ async function shrinkPhoto(file) {
     moreIn = H('input', 'hh-vh'); moreIn.type = 'file'; moreIn.accept = 'image/*'; moreIn.multiple = true; moreIn.tabIndex = -1; moreIn.setAttribute('aria-label', 'עוד חלק של הקבלה');
     if (inWebView) camBtn.hidden = true;   // the camera does not open inside the Claude app; the gallery does
     camBtn.addEventListener('click', () => camIn.click()); galBtn.addEventListener('click', () => galIn.click());
-    for (const i of [camIn, galIn]) i.addEventListener('change', async () => { const fs = [...(i.files || [])]; i.value = ''; if (fs.length) await addFiles(fs, false); });
+    camIn.addEventListener('change', async () => { const fs = [...(camIn.files || [])]; camIn.value = ''; if (fs.length) await addFiles(fs, false, true); });
+    galIn.addEventListener('change', async () => { const fs = [...(galIn.files || [])]; galIn.value = ''; if (fs.length) await addFiles(fs, false); });
     moreIn.addEventListener('change', async () => { const fs = [...(moreIn.files || [])]; moreIn.value = ''; if (fs.length) await addFiles(fs, true); });
     pick.append(camBtn, galBtn);
     pagesBox = H('div', 'sc-pages');
-    stA.append(H('p', 'sc-hint', 'צלם את כל הקבלה, ישר ובאור טוב. קבלה ארוכה אפשר לצלם בכמה חלקים, מלמעלה למטה.'), pick, pagesBox, camIn, galIn, moreIn);
+    pickHint = H('p', 'sc-hint');
+    stA.append(H('p', 'sc-hint', 'צלם את כל הקבלה, ישר ובאור טוב. קבלה ארוכה אפשר לצלם בכמה חלקים, עד ' + MAXP + '. כדאי ששורה או שתיים יופיעו גם בחלק הבא. כל החלקים צריכים להיות מאותה קבלה.'), pick, pagesBox, pickHint, camIn, galIn, moreIn);
 
-    // step 2 — scanning
+    // scanning: the three stages, then the photo with the sweep
     stB = H('div'); stB.style.cssText = 'display:flex;flex-direction:column;gap:12px';
-    const sc = H('div', 'sc-scan'); scanImg = H('img'); scanImg.alt = 'הקבלה שנסרקת'; sc.append(scanImg, H('i'));
+    steps = H('ol', 'sc-steps');
+    for (const [k, t] of [['lines', 'מציאת השורות'], ['read', 'קריאת הטקסט ובדיקת ההיגיון'], ['table', 'סידור טבלת המוצרים']]) {
+      const li = H('li'); li.dataset.s = k; const num = H('i', null, String(steps.children.length + 1)); const d = H('div'); d.append(H('b', null, t), H('span')); li.append(num, d); steps.append(li);
+    }
     const pg = H('div', 'sc-prog'); progI = H('i'); pg.append(progI);
     statP = H('p', 'sc-stat', 'סורק…'); statP.setAttribute('role', 'status'); statP.setAttribute('aria-live', 'polite');
-    stB.append(statP, pg, sc, H('p', 'sc-hint', 'זה לוקח בערך חצי דקה. השאר את המסך פתוח.'));
+    const sc = H('div', 'sc-scan'); scanImg = H('img'); scanImg.alt = 'הקבלה שנסרקת'; sc.append(scanImg, H('i'));
+    stB.append(steps, pg, statP, sc, H('p', 'sc-hint', 'זה לוקח בערך חצי דקה לכל תמונה. השאר את המסך פתוח.'));
 
-    // step 3 — check and fix
+    // check and fix
     stC = H('div'); stC.style.cssText = 'display:flex;flex-direction:column;gap:14px';
     verdict = H('div', 'sc-verdict'); verdict.setAttribute('role', 'status'); verdict.setAttribute('aria-live', 'polite');
+    checksBox = H('div', 'sc-checks');
     const fl = H('div', 'sc-fields');
     fStore = H('input'); fStore.type = 'text'; fStore.dir = 'auto'; fStore.maxLength = 40; fStore.autocomplete = 'off'; fStore.setAttribute('list', 'rc-stores');
     fDate = H('input'); fDate.type = 'date';
@@ -3895,8 +4460,8 @@ async function shrinkPhoto(file) {
     fStore.addEventListener('input', () => { S.dirty = true; if (!S.catTouched) { const g = guess(fStore.value); if (g) setCat(g); } });
     fDate.addEventListener('input', () => { S.dirty = true; });
     fCat.addEventListener('change', () => { S.dirty = true; S.catTouched = true; });
-    payBox = H('div', 'sc-wide'); methBox = H('div', 'sc-wide');
     fl.append(field('חנות', fStore), field('תאריך', fDate), field('קטגוריה', fCat, true));
+    payBox = H('div', 'sc-wide'); methBox = H('div', 'sc-wide');
     const fl2 = H('div', 'sc-fields'); fl2.append(payBox, methBox);
 
     shotBox = H('div', 'sc-shot');
@@ -3906,24 +4471,28 @@ async function shrinkPhoto(file) {
     zoomBtn = H('button', 'sc-link', 'הגדלה'); zoomBtn.type = 'button';
     zoomBtn.addEventListener('click', () => { const z = shotBox.classList.toggle('zoom'); zoomBtn.textContent = z ? 'הקטנה' : 'הגדלה'; });
     const more = H('button', 'sc-link'); more.type = 'button'; more.append(icon('plus', 16), H('span', null, 'עוד חלק של הקבלה'));
-    more.addEventListener('click', () => moreIn.click());
+    more.addEventListener('click', () => { if (S.shots.length + S.ids.length >= MAXP) { errBox.replaceChildren(document.createTextNode('אפשר עד ' + MAXP + ' תמונות לקבלה אחת.')); errBox.hidden = false; return; } moreIn.click(); });
     sb.append(hideBtn, zoomBtn, more);
+    const stick = H('div', 'sc-stick'); stick.append(sb, shotBox);   // the photo stays in view while the products scroll under it
 
-    const tape = H('div', 'sc-tape');
-    const h3 = H('h3', null, 'מוצרים'); cntSpan = H('span'); h3.append(cntSpan);
+    tabs = H('div');
+    tablePanel = H('div', 'sc-tape');
+    const h3 = H('h3', null, 'טבלת המוצרים'); cntSpan = H('span'); h3.append(cntSpan);
+    const th = H('div', 'sc-thead'); th.setAttribute('aria-hidden', 'true'); th.append(H('span', null, 'מוצר'), H('span', null, 'מחיר'), H('span'));
     rowsBox = H('div', 'sc-rows');
     const add = H('button', 'sc-link'); add.type = 'button'; add.append(icon('plus', 16), H('span', null, 'הוספת מוצר'));
     add.addEventListener('click', () => { const r = rowEl({name: '', price: 0}); rowsBox.append(r); r.querySelector('input').focus(); S.dirty = true; sumUp(); });
-    depLine = H('label', 'sc-line'); depIn = H('input'); depIn.type = 'text'; depIn.inputMode = 'decimal'; depIn.autocomplete = 'off'; depIn.dir = 'ltr';
-    depIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
-    depLine.append(H('span', null, 'פיקדון על בקבוקים'), depIn);
     const sl = H('div', 'sc-line'); sumB = H('b'); sl.append(H('span', null, 'סכום המוצרים'), sumB);
-    const pl = H('label', 'sc-line sc-pay'); payIn = H('input'); payIn.type = 'text'; payIn.inputMode = 'decimal'; payIn.autocomplete = 'off'; payIn.dir = 'ltr';
-    payIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
+    discLine = H('div', 'sc-line sc-disc'); discB = H('b'); discLine.append(H('span', null, 'מבצעים והנחות'), discB);
+    depLine = H('label', 'sc-line'); depIn = moneyIn(); depIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
+    depLine.append(H('span', null, 'פיקדון על בקבוקים'), depIn);
+    xLine = H('label', 'sc-line'); xIn = moneyIn(); xIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
+    xLine.append(H('span', null, 'הנחה על כל הקנייה'), xIn);
+    const pl = H('label', 'sc-line sc-pay'); payIn = moneyIn(); payIn.addEventListener('input', () => { S.dirty = true; sumUp(); });
     pl.append(H('span', null, 'לתשלום (₪)'), payIn);
-    tape.append(h3, rowsBox, add, H('hr', 'sc-rule'), depLine, sl, pl);
-    const stick = H('div', 'sc-stick'); stick.append(sb, shotBox);   // the photo stays in view while the products scroll under it
-    stC.append(verdict, fl, stick, tape, fl2);
+    tablePanel.append(h3, th, rowsBox, add, H('hr', 'sc-rule'), sl, discLine, xLine, depLine, pl);
+    textPanel = H('div', 'sc-text');
+    stC.append(verdict, checksBox, fl, stick, tabs, tablePanel, textPanel, fl2);
 
     inner.append(errBox, stA, stB, stC);
     const bar = H('div', 'sc-bar'), bi = H('div');
@@ -3942,6 +4511,11 @@ async function shrinkPhoto(file) {
     if (![...fCat.options].some(o => o.value === c) || fCat.options.length !== list.length) fCat.replaceChildren(...list.map(v => { const o = H('option', null, v); o.value = v; return o; }));
     fCat.value = c || list[0] || '';
   }
+  function err(msg, action) {
+    errBox.replaceChildren(document.createTextNode(msg));
+    if (action) { const b = H('button', 'sc-link', action.label); b.type = 'button'; b.addEventListener('click', action.run); errBox.append(b); }
+    errBox.hidden = false;
+  }
   function stage(s) {
     S.stage = s; stA.hidden = s !== 'pick'; stB.hidden = s !== 'scan'; stC.hidden = s !== 'check';
     errBox.hidden = true;
@@ -3959,13 +4533,21 @@ async function shrinkPhoto(file) {
       del.addEventListener('click', () => { URL.revokeObjectURL(s.url); S.shots.splice(i, 1); drawPages(); stage('pick'); });
       p.append(im, H('b', null, String(i + 1)), del); return p;
     }));
+    const n = S.shots.length;
+    pickHint.textContent = !n ? '' : n < MAXP ? 'יש ' + (n === 1 ? 'חלק אחד' : n + ' חלקים') + '. אפשר להוסיף עוד חלק של אותה קבלה, או ללחוץ "לסרוק".' : 'יש ' + n + ' חלקים, המקסימום לקבלה אחת.';
   }
-  async function addFiles(files, rescan) {
+  async function addFiles(files, rescan, fromCam) {
+    const room = MAXP - S.shots.length - S.ids.length;
+    if (room <= 0) { err('אפשר עד ' + MAXP + ' תמונות לקבלה אחת.'); return; }
     try {
-      for (const f of files.slice(0, 12 - S.shots.length)) { const s = await shrink(f); s.url = URL.createObjectURL(s.blob || f); S.shots.push(s); }
-    } catch (e) { errBox.textContent = 'לא הצלחתי לפתוח את התמונה. נסה לצלם שוב.'; errBox.hidden = false; return; }
+      for (const f of files.slice(0, room)) { const s = await shrink(f); s.url = URL.createObjectURL(s.blob || f); S.shots.push(s); }
+    } catch (e) { err('לא הצלחתי לפתוח את התמונה. נסה לצלם שוב.'); return; }
     S.dirty = true;
-    if (rescan || S.stage === 'pick') { drawPages(); if (rescan) scan(); else { stage('pick'); scan(); } }
+    if (rescan) { drawPages(); scan(); return; }
+    drawPages(); stage('pick');
+    if (files.length > room) err('לקחתי רק ' + room + ' תמונות. אפשר עד ' + MAXP + ' לקבלה אחת.');
+    // one photo from the gallery is read right away; a camera shot waits, maybe for the next part of the receipt
+    if (!fromCam && S.shots.length && !S.ids.length && files.length >= 1 && S.autoScan) scan();
   }
   async function sources() {
     const out = [];
@@ -3979,57 +4561,154 @@ async function shrinkPhoto(file) {
     for (const s of S.shots) out.push(s.url);
     return out;
   }
+  function stepState(k, cls, text) {
+    const li = steps.querySelector('[data-s="' + k + '"]'); if (!li) return;
+    li.classList.toggle('on', cls === 'on'); li.classList.toggle('done', cls === 'done');
+    const num = li.querySelector('i'); num.replaceChildren(cls === 'done' ? icon('check', 16) : document.createTextNode(String([...steps.children].indexOf(li) + 1)));
+    if (text != null) li.querySelector('span').textContent = text;
+  }
   async function scan() {
     if (!S) return;
     const tok = S.tok = (S.tok || 0) + 1;
     stage('scan');
+    for (const k of ['lines', 'read', 'table']) stepState(k, '', '');
+    stepState('lines', 'on', 'מתחיל…');
     const urls = await photoUrls(); scanImg.src = urls[0] || '';
     progI.style.width = '3%'; statP.textContent = 'מכין את הקבלה…';
     while (window.hhScanBusy) { statP.textContent = 'מסיים סריקה קודמת…'; await new Promise(r => setTimeout(r, 400)); if (!S || S.tok !== tok) return; }
-    const say = m => { if (!S || S.tok !== tok) return; statP.textContent = m; const p = String(m).match(/(\d{1,3})%/); if (p) progI.style.width = Math.max(3, +p[1]) + '%'; };
+    const mine = () => S && S.tok === tok;
+    const say = m => { if (!mine()) return; statP.textContent = m; };
+    const onStage = (k, d) => {
+      if (!mine()) return;
+      const of = d && d.of > 1 ? ' בתמונה ' + (d.page + 1) + ' מתוך ' + d.of : '';
+      if (k === 'lines') { stepState('lines', 'on', 'מחפש שורות' + of + '…'); if (urls[d.page]) scanImg.src = urls[d.page]; }
+      if (k === 'found') {
+        const where = d.of > 1 ? (d.page === 0 ? ' בתמונה הראשונה' : d.page + 1 === d.of ? ' בכל ' + d.of + ' התמונות' : ' ב־' + (d.page + 1) + ' התמונות הראשונות') : '';
+        stepState('lines', 'done', 'נמצאו ' + d.rows + ' שורות' + where); stepState('read', 'on');
+      }
+      if (k === 'read') { stepState('read', 'on', 'שורה ' + (d.done || 0) + ' מתוך ' + (d.rows || 0) + of); progI.style.width = Math.max(3, Math.min(96, d.pct || 0)) + '%'; }
+      if (k === 'logic') { stepState('read', 'on', 'בודק מבצעים, משקלים ושהכול מסתכם בסכום לתשלום…'); progI.style.width = '97%'; }
+      if (k === 'table') { stepState('read', 'done', 'הטקסט נקרא וההיגיון נבדק'); stepState('table', 'done', d.items + ' מוצרים'); progI.style.width = '100%'; }
+    };
     window.hhScanBusy = true;
     let res = null, fail = '';
     try {
       if (typeof window.hhOcrRead !== 'function') throw Object.assign(new Error('script'), {code: 'script'});
-      res = await window.hhOcrRead(await sources(), {say, store: ''});
+      res = await window.hhOcrRead(await sources(), {say, stage: onStage, store: '', known: known()});
     } catch (e) { fail = window.hhOcrMsg ? window.hhOcrMsg(e) : 'לא הצלחתי לקרוא את הקבלה.'; }
     window.hhScanBusy = false;
-    if (!S || S.tok !== tok) return;
+    if (!mine()) return;
     S.res = res; S.dirty = true;
+    if (res) await new Promise(r => setTimeout(r, 450));   // a moment to see the three stages done
     fill(res || {store: '', date: '', items: [], total: 0, deposits: 0}, null, fail);
+  }
+  function weightNote(it) {
+    if (!(it.unit > 0 && it.qty > 0)) return '';
+    return (it.units ? it.qty + ' יח׳' : it.qty + ' ק"ג') + ' × ' + money(it.unit);
   }
   function rowEl(it) {
     const wrap = H('div', 'sc-item' + (flagged(it) ? ' check' : '')), r = H('div', 'sc-row');
-    const n = H('input', 'sc-n'); n.type = 'text'; n.dir = 'auto'; n.maxLength = 60; n.value = it.name === 'מוצר' ? '' : (it.name || ''); n.placeholder = it.name === 'מוצר' ? 'השם לא נקרא' : 'שם המוצר'; n.setAttribute('aria-label', 'שם המוצר');
-    const p = H('input', 'sc-p'); p.type = 'text'; p.inputMode = 'decimal'; p.dir = 'ltr'; p.autocomplete = 'off'; p.value = it.price ? (+it.price).toFixed(2) : ''; p.placeholder = '0.00'; p.setAttribute('aria-label', 'מחיר');
-    const x = H('button'); x.type = 'button'; x.setAttribute('aria-label', 'הסרת השורה'); x.append(icon('x', 16));
+    const unnamed = !it.name || it.name === 'מוצר';
+    const n = H('input', 'sc-n'); n.type = 'text'; n.dir = 'auto'; n.maxLength = 60; n.value = unnamed ? '' : it.name; n.placeholder = unnamed && it.price ? 'השם לא נקרא' : 'שם המוצר'; n.setAttribute('aria-label', 'שם המוצר');
+    const amount = it.orig != null ? it.orig : it.price;
+    const p = moneyIn('sc-p'); p.value = amount ? (+amount).toFixed(2) : ''; p.setAttribute('aria-label', 'מחיר');
+    const x = H('button'); x.type = 'button'; x.setAttribute('aria-label', 'הסרת המוצר'); x.append(icon('x', 16));
     x.addEventListener('click', () => { wrap.remove(); S.dirty = true; sumUp(); });
-    const touched = () => { S.dirty = true; if (wrap.classList.contains('check')) { wrap.classList.remove('check'); const nt = wrap.querySelector('.sc-note'); if (nt) nt.remove(); } sumUp(); };
+    const touched = () => { S.dirty = true; if (wrap.classList.contains('check')) { wrap.classList.remove('check'); const nt = wrap.querySelector('.sc-note.warn'); if (nt) nt.remove(); } sumUp(); };
     n.addEventListener('input', touched); p.addEventListener('input', touched);
     r.append(n, p, x); wrap.append(r); wrap._it = it;
+    if (it.disc > 0 || it.promo) {   // the promo of this product, on its own row under it
+      const sub = H('div', 'sc-sub'), d = moneyIn(); d.value = it.disc > 0 ? '-' + (+it.disc).toFixed(2) : ''; d.setAttribute('aria-label', 'הנחת המבצע');
+      const pt = H('span', 'sc-pt', it.promo || ''); pt.dir = 'auto';
+      const rx = H('button'); rx.type = 'button'; rx.setAttribute('aria-label', 'הסרת המבצע'); rx.append(icon('x', 14));
+      rx.addEventListener('click', () => { sub.remove(); S.dirty = true; sumUp(); });
+      d.addEventListener('input', touched);
+      sub.append(H('span', 'sc-tag', 'מבצע'), pt, d, rx); wrap.append(sub); wrap._disc = d;
+    }
+    const wn = weightNote(it); if (wn) { const nt = H('p', 'sc-note', wn); nt.dir = 'rtl'; wrap.append(nt); }
+    if (flagged(it)) { const k = it.fixed ? 'fixed' : it.warn || 'name'; wrap.append(H('p', 'sc-note warn', (NOTE[k] || NOTE.name)(it))); }
     wrap.addEventListener('focusin', () => showAt(it.at));
-    if (flagged(it)) wrap.append(H('p', 'sc-note', it.fixed ? 'המחיר תוקן כדי שהסכום יסתדר. השווה לקבלה.' : 'השם לא נקרא. השלם אותו מהקבלה.'));
     return wrap;
   }
   function readRows() {
     return [...rowsBox.children].map(w => {
-      const [n, p] = w.querySelectorAll('input'), it = Object.assign({}, w._it), price = pnum(p.value);
-      it.name = n.value.trim(); it.price = isFinite(price) ? r2(price) : 0; delete it.fixed;
-      if (it.unit && it.qty && Math.abs(r2(it.unit * it.qty) - it.price) > 0.02) { delete it.unit; delete it.qty; }
+      const n = w.querySelector('.sc-n'), p = w.querySelector('.sc-p'), it = Object.assign({}, w._it), amount = pnum(p.value);
+      const disc = w._disc && w._disc.isConnected ? Math.abs(pnum(w._disc.value)) || 0 : 0;
+      const a = isFinite(amount) ? r2(amount) : 0;
+      it.name = n.value.trim(); it.price = r2(a - disc);
+      for (const k of ['fixed', 'warn', 'calc', 'orig', 'disc']) delete it[k];
+      if (disc > 0) { it.orig = a; it.disc = r2(disc); } else delete it.promo;
+      if (it.unit && it.qty && !it.units && Math.abs(r2(it.unit * it.qty) - a) > 0.02) { delete it.unit; delete it.qty; }
       return it;
-    }).filter(it => it.price || it.name).map(it => Object.assign(it, {name: it.name || 'מוצר'}));
+    }).filter(it => it.price || it.orig || it.name).map(it => Object.assign(it, {name: it.name || 'מוצר'}));
   }
   function sumUp() {
-    const items = readRows(), dep = pnum(depIn.value) || 0, s = r2(items.reduce((a, x) => a + x.price, 0) + dep), t = pnum(payIn.value);
-    sumB.textContent = money(s); cntSpan.textContent = items.length ? String(items.length) : '';
+    const items = readRows(), dep = Math.abs(pnum(depIn.value)) || 0, xd = Math.abs(pnum(xIn.value)) || 0;
+    const gross = r2(items.reduce((a, x) => a + (x.orig != null ? x.orig : x.price), 0)), disc = r2(items.reduce((a, x) => a + (x.disc || 0), 0));
+    const s = r2(gross - disc - xd + dep), t = pnum(payIn.value);
+    sumB.textContent = money(gross); discB.textContent = '-' + money(disc); discLine.hidden = !disc;
+    cntSpan.textContent = items.length ? items.length + ' מוצרים' : '';
     const left = rowsBox.querySelectorAll('.sc-item.check').length;
     let cls = 'warn', msg;
     if (!items.length) msg = 'לא נמצאו מוצרים. אפשר להוסיף אותם ביד, או לשמור רק את הסכום לתשלום.';
     else if (!(t > 0)) msg = 'הכנס את הסכום לתשלום שבקבלה.';
-    else if (Math.abs(t - s) < 0.005) { cls = 'ok'; msg = 'המוצרים מסתכמים בדיוק בסכום לתשלום.' + (left === 1 ? ' נשארה שורה אחת מסומנת לבדיקה.' : left ? ' נשארו ' + left + ' שורות מסומנות לבדיקה.' : ''); }
-    else if (s < t) msg = 'חסרים ' + money(r2(t - s)) + ' עד הסכום לתשלום. אולי שורה לא נקראה או מחיר נקרא לא נכון.';
-    else msg = 'המוצרים יוצאים ' + money(r2(s - t)) + ' יותר מהסכום לתשלום. אולי שורה נקראה פעמיים או מחיר נקרא לא נכון.';
+    else if (Math.abs(t - s) < 0.005) { cls = 'ok'; msg = 'המוצרים, אחרי המבצעים' + (dep ? ' ועם הפיקדון' : '') + ', מסתכמים בדיוק בסכום לתשלום.' + (left === 1 ? ' נשארה שורה אחת מסומנת לבדיקה.' : left ? ' נשארו ' + left + ' שורות מסומנות לבדיקה.' : ''); }
+    else if (s < t) msg = 'חסרים ' + money(r2(t - s)) + ' עד הסכום לתשלום. אולי מוצר לא נקרא (בדוק ב"כל הטקסט"), או שחלק מהקבלה לא צולם.';
+    else msg = 'המוצרים יוצאים ' + money(r2(s - t)) + ' יותר מהסכום לתשלום. אולי מוצר נקרא פעמיים, או שמבצע לא נקרא.';
     verdict.className = 'sc-verdict ' + cls; verdict.replaceChildren(icon(cls === 'ok' ? 'check' : 'receipt-text', 18), H('span', null, msg));
+  }
+  function drawChecks(res) {
+    const list = (res && Array.isArray(res.checks) ? res.checks : []).filter(c => c.text && c.key !== 'sum');
+    checksBox.hidden = !list.length; if (!list.length) { checksBox.replaceChildren(); return; }
+    const ul = H('ul');
+    for (const c of list) { const li = H('li', c.ok ? 'ok' : 'warn'); li.append(icon(c.ok ? 'check' : 'receipt-text', 16), H('span', null, c.text)); ul.append(li); }
+    checksBox.replaceChildren(H('h3', null, 'מה נבדק'), ul);
+  }
+  function drawText(res) {
+    const L = res && Array.isArray(res.lines) ? res.lines : [];
+    textPanel.replaceChildren();
+    if (!L.length) return;
+    const K = window.hhOcrKinds || {};
+    const lineRow = l => {
+      const loose = l.used === -1 && l.amt > 0 && ['other', 'name', 'product'].includes(l.kind);
+      const row = H('div', 'sc-tl k-' + l.kind + (['header', 'footer', 'tax', 'info', 'code'].includes(l.kind) ? ' dim' : '') + (loose ? ' loose' : ''));
+      const k = H('span', 'sc-k', loose ? 'לא בטבלה' : K[l.kind] || l.kind);
+      const t = H('button', 'sc-tt', l.t); t.type = 'button'; t.dir = 'rtl'; t.addEventListener('click', () => showAt(l.at));
+      row.append(k, t);
+      if (loose) {
+        const a = H('button', 'sc-link sc-add'); a.type = 'button'; a.append(icon('plus', 14), H('span', null, 'להוסיף כמוצר, ' + money(l.amt)));
+        a.addEventListener('click', () => {
+          const nm = String(l.t).split(' ').filter(w => /[א-תA-Za-z]{2,}/.test(w) && !/\d[.,]\d{2}/.test(w)).join(' ');
+          rowsBox.append(rowEl({name: nm, price: r2(l.amt), at: l.at})); S.dirty = true; sumUp();
+          row.classList.remove('loose'); k.textContent = 'נוסף לטבלה'; a.remove();
+        });
+        row.append(a);
+      }
+      return row;
+    };
+    const fold = (title, rows) => { const d = H('details', 'sc-fold'), sm = H('summary', null, title + ', ' + (rows.length === 1 ? 'שורה אחת' : rows.length + ' שורות')); d.append(sm, ...rows.map(lineRow)); return d; };
+    // the top of the receipt and the card slip at its end are folded away: the products stay in view
+    let h = 0; while (h < L.length && L[h].kind === 'header') h++;
+    let e = L.findIndex((l, i) => i >= h && (l.kind === 'total' || l.kind === 'total1' || (l.kind === 'payment' && l.amt > 0)));
+    if (e < 0) e = L.length;
+    const SHOW = ['total', 'total1', 'subtotal', 'count', 'savings'];
+    if (h) textPanel.append(fold('ראש הקבלה', L.slice(0, h)));
+    const multi = L.some(l => l.page > 0);
+    // a mark where the next photo starts; rows two photos share keep the clearer copy, from either photo, without a mark
+    const seen = new Set(L.slice(0, h + 1).map(l => l.page));
+    for (let i = h; i < e; i++) {
+      if (multi && !seen.has(L[i].page)) { seen.add(L[i].page); textPanel.append(H('div', 'sc-pg', 'מכאן תמונה ' + (L[i].page + 1))); }
+      textPanel.append(lineRow(L[i]));
+    }
+    const tail = L.slice(e), shown = tail.filter(l => SHOW.includes(l.kind) || (l.kind === 'payment' && l.amt > 0) || (l.used === -1 && l.amt > 0 && ['other', 'name', 'product'].includes(l.kind)));
+    for (const l of shown) textPanel.append(lineRow(l));
+    const rest = tail.filter(l => !shown.includes(l));
+    if (rest.length) textPanel.append(fold('סוף הקבלה', rest));
+    textPanel.append(H('p', 'sc-tnote', 'כל שורה שנקראה, לפי הסדר בקבלה. לחיצה על שורה מסמנת אותה בתמונה.'));
+  }
+  function setTab(v) {
+    S.tab = v; tablePanel.hidden = v !== 'table'; textPanel.hidden = v !== 'text';
+    for (const b of tabs.querySelectorAll('button')) { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
   }
   async function fill(r, entry, fail) {
     stage('check');
@@ -4042,12 +4721,28 @@ async function shrinkPhoto(file) {
     payBox.replaceChildren(); if (ps.length > 1) payBox.append(seg('מי שילם', ps, S.payer, v => { S.payer = v; S.dirty = true; }));
     methBox.replaceChildren(seg('איך שילמת', [{v: 'card', label: 'אשראי'}, {v: 'cash', label: 'מזומן'}], S.method, v => { S.method = v; S.dirty = true; }));
     rowsBox.replaceChildren(...(r.items || []).map(rowEl));
-    const dep = r.deposits || 0; depIn.value = dep ? dep.toFixed(2) : ''; depLine.hidden = !dep;
+    const dep = r.deposits || 0; depIn.value = dep ? (+dep).toFixed(2) : ''; depLine.hidden = !dep;
+    const xd = r.discount || 0; xIn.value = xd ? '-' + (+xd).toFixed(2) : ''; xLine.hidden = !xd;
     const total = r.total || e.amount || 0; payIn.value = total > 0 ? (+total).toFixed(2) : '';
     const urls = await photoUrls();
     shotBox.replaceChildren(...urls.map((u, i) => { const im = H('img'); im.alt = 'הקבלה, חלק ' + (i + 1); im.src = u; return im; }));
     shotBox.hidden = !urls.length; hideBtn.hidden = !urls.length; zoomBtn.hidden = !urls.length; hideBtn.textContent = 'הסתרת התמונה';
-    if (fail) { errBox.textContent = fail + ' אפשר להוסיף את המוצרים ביד.'; errBox.hidden = false; }
+    drawChecks(entry ? null : r);
+    drawText(entry ? null : r);
+    const nl = entry || !Array.isArray(r.lines) ? 0 : r.lines.length;
+    tabs.replaceChildren();
+    if (nl) tabs.append(seg('', [{v: 'table', label: 'טבלת מוצרים'}, {v: 'text', label: 'כל הטקסט (' + nl + ' שורות)'}], 'table', setTab, 'sc-tabs'));
+    setTab('table');
+    if (fail) err(fail + ' אפשר להוסיף את המוצרים ביד.');
+    const mixed = !entry && Array.isArray(r.mixed) ? r.mixed : [];
+    if (mixed.length && !fail) {
+      const n = mixed.map(i => i + 1).join(', ');
+      err((mixed.length === 1 ? 'תמונה ' + n + ' היא' : 'תמונות ' + n + ' הן') + ' מקבלה אחרת, ולכן לא נכללו. סורקים יחד רק חלקים של אותה קבלה.', {label: 'להסיר ' + (mixed.length === 1 ? 'אותה' : 'אותן') + ' ולסרוק שוב', run: () => {
+        const nIds = S.ids.length, drop = new Set(mixed);
+        S.ids = S.ids.filter((_, i) => !drop.has(i)); S.shots = S.shots.filter((s, i) => { const k = drop.has(i + nIds); if (k) URL.revokeObjectURL(s.url); return !k; });
+        drawPages(); scan();
+      }});
+    }
     sumUp();
     inner.parentElement.scrollTop = 0;
   }
@@ -4059,11 +4754,11 @@ async function shrinkPhoto(file) {
     return ids;
   }
   async function save() {
-    if (!window.hhDb) { errBox.textContent = 'השמירה לא זמינה כאן.'; errBox.hidden = false; return; }
-    const items = readRows(), dep = r2(pnum(depIn.value) || 0), store = fStore.value.trim();
-    let total = pnum(payIn.value); if (!(total > 0)) total = r2(items.reduce((a, x) => a + x.price, 0) + dep);
-    if (!(total > 0)) { payIn.focus(); errBox.textContent = 'הכנס את הסכום לתשלום שבקבלה.'; errBox.hidden = false; return; }
-    if (total > 1000000) { payIn.focus(); errBox.textContent = 'הסכום גבוה מדי. בדוק שהקלדת נכון.'; errBox.hidden = false; return; }
+    if (!window.hhDb) { err('השמירה לא זמינה כאן.'); return; }
+    const items = readRows(), dep = r2(Math.abs(pnum(depIn.value)) || 0), xd = r2(Math.abs(pnum(xIn.value)) || 0), store = fStore.value.trim();
+    let total = pnum(payIn.value); if (!(total > 0)) total = r2(items.reduce((a, x) => a + x.price, 0) - xd + dep);
+    if (!(total > 0)) { payIn.focus(); err('הכנס את הסכום לתשלום שבקבלה.'); return; }
+    if (total > 1000000) { payIn.focus(); err('הסכום גבוה מדי. בדוק שהקלדת נכון.'); return; }
     if (!fDate.value) { fDate.focus(); return; }
     const cat = fCat.value || 'אחר';
     goBtn.disabled = true; const label = goBtn.textContent; goBtn.textContent = 'שומר…';
@@ -4075,6 +4770,7 @@ async function shrinkPhoto(file) {
         payer: S.payer, amount: r2(total), items, store, readAt: new Date().toISOString(), autoCat: !S.catTouched, scanned: true
       };
       if (dep) data.deposits = dep;
+      if (xd) data.discount = xd;
       if (S.method === 'cash') data.cash = true;
       if (ids.length) { data.receipt = ids[0]; data.receipts = ids; }
       if (S.catTouched && store && window.hhLearn && !window.hhLearn.some(l => l.key === nrm(store) && l.category === cat)) {
@@ -4082,7 +4778,7 @@ async function shrinkPhoto(file) {
       }
       if (S.mode === 'edit' && S.entry && S.entry.id) {
         const out = Object.assign({}, S.entry, data); delete out.id;
-        for (const k of ['pending', 'readNote', 'checkNote', 'cash', 'deposits']) if (!(k in data)) delete out[k];
+        for (const k of ['pending', 'readNote', 'checkNote', 'cash', 'deposits', 'discount']) if (!(k in data)) delete out[k];
         await window.hhDb.collection('entries').doc(S.entry.id).set(out);
       } else {
         data.createdAt = new Date().toISOString();
@@ -4093,17 +4789,17 @@ async function shrinkPhoto(file) {
       const msg = 'נשמר: ' + data.item + ', ' + money(data.amount);
       close(true); tell(msg);
     } catch (e) {
-      errBox.textContent = e && e.message === 'no-assets' ? 'אי אפשר לשמור תמונות כאן. אפשר לשמור בלי התמונה: הסר את התמונות ונסה שוב.' : 'השמירה נכשלה. נסה שוב.';
-      errBox.hidden = false; goBtn.disabled = false; goBtn.textContent = label;
+      err(e && e.message === 'no-assets' ? 'אי אפשר לשמור תמונות כאן. אפשר לשמור בלי התמונה: הסר את התמונות ונסה שוב.' : 'השמירה נכשלה. נסה שוב.');
+      goBtn.disabled = false; goBtn.textContent = label;
     }
   }
   function begin(mode, entry) {
     if (!ov) build();
     if (S) for (const s of S.shots) URL.revokeObjectURL(s.url);
     const btn = document.querySelector('#add [data-payer].on');
-    S = {mode, entry: entry || null, shots: [], ids: [], stage: 'pick', dirty: false, catTouched: false,
+    S = {mode, entry: entry || null, shots: [], ids: [], stage: 'pick', dirty: false, catTouched: false, tab: 'table',
       payer: (entry && entry.payer) || window.hhPayer || (btn && btn.dataset.payer) || '', method: entry ? (entry.cash ? 'cash' : 'card') : (window.hhMethod === 'cash' ? 'cash' : 'card')};
-    if (entry) S.ids = (Array.isArray(entry.receipts) && entry.receipts.length ? entry.receipts : entry.receipt ? [entry.receipt] : []).slice();
+    if (entry) S.ids = (Array.isArray(entry.receipts) && entry.receipts.length ? entry.receipts : entry.receipt ? [entry.receipt] : []).slice(0, MAXP);
     ttl.textContent = mode === 'edit' ? 'הקבלה' : 'סריקת קבלה';
     ov.hidden = false; document.documentElement.style.overflow = 'hidden';
     setTimeout(() => ttl.focus(), 30);
@@ -4120,27 +4816,29 @@ async function shrinkPhoto(file) {
   function confirmLeave() {
     if (S.leaveAsked) return true;
     S.leaveAsked = true;
-    errBox.textContent = 'הקבלה עוד לא נשמרה. לחץ שוב על "סגירה" כדי לצאת בלי לשמור.'; errBox.hidden = false; errBox.scrollIntoView({block: 'nearest'});
+    err('הקבלה עוד לא נשמרה. לחץ שוב על "סגירה" כדי לצאת בלי לשמור.'); errBox.scrollIntoView({block: 'nearest'});
     return false;
   }
 
   window.hhScanner = {
-    // a new receipt: shots already picked (scan right away) or an empty start
+    v: 3,
+    // a new receipt: photos already picked, or an empty start. Several photos from the gallery are parts of one receipt
     open(opts) {
       const o = opts || {};
       begin('new', null);
       drawPages(); stage('pick');
-      if (o.files && o.files.length) addFiles(o.files, false);
+      S.autoScan = true;
+      if (o.files && o.files.length) addFiles(o.files, false, !!o.camera);
       else if (o.pick === 'camera' && !camBtn.hidden) camIn.click();
       else if (o.pick === 'gallery') galIn.click();
     },
-    // a saved expense: its photo and products, to fix and save; scan: read the photo again first
+    // a saved expense: its photos and products, to fix and save; scan: read the photos again first
     edit(entry, opts) {
       if (!entry) return;
       begin('edit', entry);
       drawPages();
       if (opts && opts.scan && S.ids.length) scan();
-      else fill({store: entry.store || '', date: entry.date, items: entry.items || [], total: entry.amount > 0 ? entry.amount : 0, deposits: entry.deposits || 0}, entry, '');
+      else fill({store: entry.store || '', date: entry.date, items: entry.items || [], total: entry.amount > 0 ? entry.amount : 0, deposits: entry.deposits || 0, discount: entry.discount || 0}, entry, '');
     },
     busy: () => !!window.hhScanBusy
   };
